@@ -1,12 +1,79 @@
-# React + Vite
+# FPL Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React application for tracking Fantasy Premier League (FPL) statistics, fixtures, and player performance.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 📊 Live gameweek statistics
+- ⚽ Fixture tracking and analysis
+- 👥 Team management interface
+- 📈 Player performance metrics
+- 🏆 League position tracking
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- React (with Vite)
+- TailwindCSS
+- Node.js
+- Express (for proxy server)
+
+## API
+
+This project uses the Official Fantasy Premier League API. The API endpoints are accessed through a proxy server to handle CORS issues.
+
+Key endpoints used:
+- `/api/bootstrap-static/` - General game information
+- `/api/entry/{id}/` - User team information
+- `/api/event/{id}/live/` - Live gameweek data
+- `/api/fixtures/` - Match fixtures data
+
+## Getting Started
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/fpl-tracker.git
+```
+
+2. Install dependencies:
+```bash
+cd fpl-tracker
+npm install
+```
+
+3. Start the development server:
+```bash
+npm run dev
+```
+
+4. Start the proxy server:
+```bash
+node src/proxy/index.js
+```
+
+## Environment Setup
+
+Create a `.env` file in the root directory with:
+```env
+VITE_API_URL=http://localhost:3001
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- [Fantasy Premier League API Documentation](https://fantasy.premierleague.com/api)
+- [FPL API Community](https://www.reddit.com/r/FantasyPL/wiki/api)
+
+---
+*Note: This project is not affiliated with or endorsed by the Official Fantasy Premier League.*
+
