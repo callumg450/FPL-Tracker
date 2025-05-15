@@ -6,6 +6,7 @@ import FixturesPage from '../pages/FixturesPage.tsx';
 import PlayerDetailModal from './PlayerDetailModal.tsx';
 import FixturePlayersModal from './FixturePlayersModal.tsx';
 import MyTeam from '../pages/MyTeam.tsx';
+import Leagues from '../pages/Leagues.tsx';
 
 function App() {
   // Only keep userId and modal state in App
@@ -25,6 +26,7 @@ function App() {
           <Link to="/" className="text-indigo-700 font-bold hover:underline">Fixtures</Link>
           <Link to="/team-selector" className="text-indigo-700 font-bold hover:underline">Team Selector</Link>
           <Link to="/my-team" className="text-indigo-700 font-bold hover:underline">My Team</Link>
+          <Link to="/leagues" className="text-indigo-700 font-bold hover:underline">Leagues</Link>
           <input
             type="text"
             className="border rounded px-2 py-1 ml-4 w-32"
@@ -47,6 +49,7 @@ function App() {
             />
             <Route path="/team-selector" element={<TeamSelector />} />
             <Route path="/my-team" element={<MyTeam userId={userId} />} />
+            <Route path="/leagues" element={<Leagues userId={userId} />} />
           </Routes>
         </div>
         {/* Fixture modal and player modal are controlled by App, but data/logic is in children */}

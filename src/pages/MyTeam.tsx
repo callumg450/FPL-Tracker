@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import TeamFormation from '../components/TeamFormation';
 
 const POSITION_MAP: Record<number, string> = {
   1: 'Goalkeeper',
@@ -50,6 +51,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [entryHistory, setEntryHistory] = useState<EntryHistory | null>(null);
+  const [teams, setTeams] = useState<any[]>([]);
 
   // Fetch all players and events on mount
   useEffect(() => {
@@ -98,6 +100,13 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
       .then(res => res.json())
       .then(data => setEntryHistory(data));
   }, [submittedUserId]);
+
+  // Fetch all teams on mount
+  useEffect(() => {
+    fetch('http://localhost:5000/api/bootstrap-static')
+      .then(res => res.json())
+      .then(data => setTeams(data.teams || []));
+  }, []);
 
   useEffect(() => {
     setInputUserId(userId || '');
@@ -180,20 +189,22 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
     <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl p-8 mt-8">
       <h1 className="text-3xl font-bold text-center mb-8 text-blue-800">View FPL Team</h1>
       <form onSubmit={e => { e.preventDefault(); }} className="space-y-4">
-        <div>
-          <label className="block font-semibold mb-1">FPL User ID</label>
-          <input
-            type="text"
-            className="border rounded px-3 py-2 w-full"
-            value={inputUserId}
-            onChange={e => setInputUserId(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block font-semibold mb-1">Gameweek</label>
+        {/* Only show FPL User ID input if not already submitted */}
+        {submittedUserId === '' && (
+          <div>
+            <label className="block font-semibold mb-1">FPL User ID</label>
+            <input
+              type="text"
+              className="border rounded px-3 py-2 w-full"
+              value={inputUserId}
+              onChange={e => setInputUserId(e.target.value)}
+              required
+            />
+          </div>
+        )}
+        <div className="flex justify-center">
           <select
-            className="border rounded px-3 py-2 w-full"
+            className="border rounded px-3 py-2 w-48"
             value={selectedEventId ?? ''}
             onChange={e => setSelectedEventId(Number(e.target.value))}
             disabled={events.length === 0}
@@ -204,6 +215,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
           </select>
         </div>
         {error && <div className="text-red-500 text-center">{error}</div>}
+        {submittedUserId === '' && (
         <button
           type="button"
           className="bg-indigo-600 text-white px-6 py-2 rounded font-bold w-full"
@@ -212,10 +224,10 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
         >
           {loading ? 'Loading...' : 'View Team'}
         </button>
+        )}
       </form>
       {team && players.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4 text-indigo-700 text-center">Team for Current Gameweek</h2>
           {/* Total score for the week */}
           <div className="text-center text-lg font-bold text-indigo-900 mb-2">
             Total Score: {getTotalScore() !== null ? getTotalScore() : 'N/A'}
@@ -241,84 +253,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
               </div>
             );
           })()}
-          <div className="flex flex-col items-center gap-4">
-            {/* Goalkeeper */}
-            <div className="flex justify-center mb-2">
-              {formation.Goalkeeper.map(player => {
-                const pts = getPointsAndBonus(player.id);
-                return (
-                  <div key={player.id} className="bg-blue-100 rounded px-4 py-2 mx-1 font-bold text-blue-900 shadow flex flex-col items-center">
-                    {player.web_name} <span className="text-xs text-gray-500">(GK)</span>
-                    {pts && (
-                      <span className="text-xs text-blue-800 font-normal">{pts.points} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {/* Defenders */}
-            <div className="flex justify-center mb-2 gap-2">
-              {formation.Defender.map(player => {
-                const pts = getPointsAndBonus(player.id);
-                return (
-                  <div key={player.id} className="bg-green-100 rounded px-3 py-2 font-bold text-green-900 shadow flex flex-col items-center">
-                    {player.web_name} <span className="text-xs text-gray-500">(DEF)</span>
-                    {pts && (
-                      <span className="text-xs text-green-800 font-normal">{pts.points} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {/* Midfielders */}
-            <div className="flex justify-center mb-2 gap-2">
-              {formation.Midfielder.map(player => {
-                const pts = getPointsAndBonus(player.id);
-                return (
-                  <div key={player.id} className="bg-yellow-100 rounded px-3 py-2 font-bold text-yellow-900 shadow flex flex-col items-center">
-                    {player.web_name} <span className="text-xs text-gray-500">(MID)</span>
-                    {pts && (
-                      <span className="text-xs text-yellow-800 font-normal">{pts.points} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {/* Forwards */}
-            <div className="flex justify-center gap-2">
-              {formation.Forward.map(player => {
-                const pts = getPointsAndBonus(player.id);
-                return (
-                  <div key={player.id} className="bg-red-100 rounded px-3 py-2 font-bold text-red-900 shadow flex flex-col items-center">
-                    {player.web_name} <span className="text-xs text-gray-500">(FWD)</span>
-                    {pts && (
-                      <span className="text-xs text-red-800 font-normal">{pts.points} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          {/* Bench Section */}
-          {bench.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-lg font-bold text-center text-gray-700 mb-2">Bench</h3>
-              <div className="flex flex-row flex-wrap justify-center gap-2">
-                {bench.map(player => {
-                  const pts = getPointsAndBonus(player.id);
-                  return (
-                    <div key={player.id} className="bg-gray-200 rounded px-3 py-2 font-bold text-gray-700 shadow flex flex-col items-center">
-                      <span>{player.web_name}</span>
-                      <span className="text-xs text-gray-500">{POSITION_MAP[player.element_type]}</span>
-                      {pts && (
-                        <span className="text-xs text-gray-800 font-normal">{pts.points} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <TeamFormation picks={team.picks} players={players} liveData={liveData} showPoints={true} teams={teams} />
         </div>
       )}
     </div>

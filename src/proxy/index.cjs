@@ -134,6 +134,45 @@ app.get('/api/entry-history/:userId', async (req, res) => {
   }
 });
 
+// Endpoint to get all leagues for a user (classic and h2h)
+app.get('/api/user-leagues/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    // Classic leagues
+    const entryRes = await superagent.get(`https://fantasy.premierleague.com/api/entry/${userId}/`);
+    const classic = entryRes.body.leagues?.classic || [];
+    const h2h = entryRes.body.leagues?.h2h || [];
+    res.json({ classic, h2h });
+  } catch (err) {
+    console.error('Proxy error (user-leagues):', err.message);
+    res.status(500).json({ error: 'Failed to fetch user leagues', details: err.message });
+  }
+});
+
+// Endpoint to get classic league standings
+app.get('/api/leagues-classic/:leagueId/standings/', async (req, res) => {
+  try {
+    const { leagueId } = req.params;
+    const response = await superagent.get(`https://fantasy.premierleague.com/api/leagues-classic/${leagueId}/standings/`);
+    res.json(response.body);
+  } catch (err) {
+    console.error('Proxy error (leagues-classic):', err.message);
+    res.status(500).json({ error: 'Failed to fetch classic league standings', details: err.message });
+  }
+});
+
+// Endpoint to get h2h league standings
+app.get('/api/leagues-h2h/:leagueId/standings/', async (req, res) => {
+  try {
+    const { leagueId } = req.params;
+    const response = await superagent.get(`https://fantasy.premierleague.com/api/leagues-h2h/${leagueId}/standings/`);
+    res.json(response.body);
+  } catch (err) {
+    console.error('Proxy error (leagues-h2h):', err.message);
+    res.status(500).json({ error: 'Failed to fetch h2h league standings', details: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`FPL Proxy server running on http://localhost:${PORT}`);
 });
