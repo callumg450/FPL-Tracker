@@ -11,18 +11,45 @@ interface MyTeamProps {
   userId: string;
 }
 
+// Add types for team, player, pick, liveData, entryHistory
+interface Player {
+  id: number;
+  element_type: number;
+  web_name: string;
+  [key: string]: any;
+}
+interface Pick {
+  element: number;
+  position: number;
+  multiplier: number;
+  [key: string]: any;
+}
+interface Team {
+  picks: Pick[];
+  [key: string]: any;
+}
+interface LiveData {
+  id: number;
+  stats: { total_points: number; bonus: number; minutes: number };
+  [key: string]: any;
+}
+interface EntryHistory {
+  current: Array<{ event: number; overall_rank: number } & Record<string, any>>;
+  [key: string]: any;
+}
+
 const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
   const [inputUserId, setInputUserId] = useState(userId || '');
   const [submittedUserId, setSubmittedUserId] = useState(userId || '');
-  const [team, setTeam] = useState(null);
-  const [players, setPlayers] = useState([]);
+  const [team, setTeam] = useState<Team | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [liveData, setLiveData] = useState(null);
+  const [liveData, setLiveData] = useState<LiveData[]>([]);
   const [currentEventId, setCurrentEventId] = useState(null);
   const [events, setEvents] = useState([]);
-  const [selectedEventId, setSelectedEventId] = useState(null);
-  const [entryHistory, setEntryHistory] = useState(null);
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+  const [entryHistory, setEntryHistory] = useState<EntryHistory | null>(null);
 
   // Fetch all players and events on mount
   useEffect(() => {
@@ -40,7 +67,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
   // Always fetch live data for the selected gameweek
   useEffect(() => {
     if (!selectedEventId) {
-      setLiveData(null);
+      setLiveData([]); // Use empty array instead of null
       return;
     }
     fetch(`http://localhost:5000/api/event/${selectedEventId}/live/`)
@@ -150,7 +177,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
   };
 
   return (
-    <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-2xl p-8 mt-8">
+    <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl p-8 mt-8">
       <h1 className="text-3xl font-bold text-center mb-8 text-blue-800">View FPL Team</h1>
       <form onSubmit={e => { e.preventDefault(); }} className="space-y-4">
         <div>

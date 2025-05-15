@@ -126,7 +126,7 @@ const FixturesPage = ({ setSelectedPlayer, setFixtureModal }: { setSelectedPlaye
 
   // Render UI
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
+    <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
       <h1 className="text-4xl font-extrabold text-center mb-8 text-indigo-800 drop-shadow-lg tracking-tight">
         FPL Fixtures
       </h1>

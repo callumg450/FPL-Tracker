@@ -59,7 +59,7 @@ const TeamSelector: React.FunctionComponent = () => {
       .slice(0, 5);
 
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
+    <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
       <h1 className="text-3xl font-bold text-center mb-8 text-blue-800">Team Selector: Easiest Fixtures Next GW</h1>
       {loading ? (
         <div className="text-center text-lg">Loading...</div>
