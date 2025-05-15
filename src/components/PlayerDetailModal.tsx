@@ -1,18 +1,44 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 const PlayerDetailModal = ({
   player,
-  playerSummary,
-  loading,
-  onClose,
-  getTeam
+  onClose
 }: {
   player: any;
-  playerSummary: any;
-  loading: boolean;
   onClose: () => void;
-  getTeam: (id: number) => any;
 }) => {
+  const [playerSummary, setPlayerSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [team, setTeam] = useState<any>(null);
+
+  useEffect(() => {
+    if (!player) return;
+    setLoading(true);
+    const fetchSummary = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/element-summary/${player.id}/`);
+        const summary = await res.json();
+        setPlayerSummary(summary);
+      } catch {
+        setPlayerSummary(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSummary();
+  }, [player]);
+
+  useEffect(() => {
+    if (!player) return;
+    // Fetch team info for player
+    const fetchTeam = async () => {
+      const res = await fetch('http://localhost:5000/api/bootstrap-static');
+      const data = await res.json();
+      setTeam(data.teams.find((t: any) => t.id === player.team));
+    };
+    fetchTeam();
+  }, [player]);
+
   if (!player) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -27,7 +53,7 @@ const PlayerDetailModal = ({
         <div className="flex flex-col sm:flex-row gap-6 mb-4 justify-center items-center">
           <div>
             <div className="font-semibold">Team:</div>
-            <div>{getTeam(player.team)?.name}</div>
+            <div>{team?.name}</div>
           </div>
           <div>
             <div className="font-semibold">Position:</div>
