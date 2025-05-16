@@ -18,7 +18,7 @@ const StatRow = ({ label, outValue, inValue }) => {
 const FixtureRow = ({ team, fixtures }) => {
   if (!fixtures || fixtures.length === 0) return null;
   
-  return (    <div className="flex space-x-2">      {fixtures.slice(0, 3).map((fixture, idx) => {
+  return (    <div className="flex justify-center space-x-2">      {fixtures.slice(0, 3).map((fixture, idx) => {
         const isHome = fixture.team_h === team.team;
         const opponent = isHome ? fixture.team_a_name : fixture.team_h_name;
         const difficulty = isHome ? fixture.team_h_difficulty : fixture.team_a_difficulty;
@@ -159,20 +159,23 @@ const PlayerCompareModal = ({ isOpen, onClose, outPlayer, inPlayer, teams, fixtu
             outValue={outPlayer.ict_index}
             inValue={inPlayer.ict_index}
           />
-        </div>        {/* Upcoming Fixtures */}
+        </div>        {/* Difficulty Rating Key */}
         <div className="mt-6 border-t pt-4">
-          <h3 className="text-lg font-semibold mb-4 text-center">Upcoming Fixtures</h3>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <div className="text-center mb-2 text-sm font-medium">{outPlayer.web_name}</div>              <FixtureRow team={{ team: outPlayer.team }} fixtures={playerFixtures.out} />
-            </div>
-            <div className="text-center text-sm text-gray-500">
-              Difficulty Rating:<br/>
+          <div className="text-center text-sm text-gray-500 mb-4">
+            <div className="mb-1">Difficulty Rating:</div>
+            <div className="flex flex-wrap justify-center gap-1">
               <span className="bg-green-200 text-green-900 px-2 rounded text-xs">1</span>
-              <span className="bg-green-100 text-green-800 px-2 rounded text-xs ml-1">2</span>
-              <span className="bg-gray-100 text-gray-800 px-2 rounded text-xs ml-1">3</span>
-              <span className="bg-red-100 text-red-800 px-2 rounded text-xs ml-1">4</span>
-              <span className="bg-red-200 text-red-900 px-2 rounded text-xs ml-1">5</span>
+              <span className="bg-green-100 text-green-800 px-2 rounded text-xs">2</span>
+              <span className="bg-gray-100 text-gray-800 px-2 rounded text-xs">3</span>
+              <span className="bg-red-100 text-red-800 px-2 rounded text-xs">4</span>
+              <span className="bg-red-200 text-red-900 px-2 rounded text-xs">5</span>
+            </div>
+          </div>          {/* Upcoming Fixtures */}
+          <h3 className="text-lg font-semibold mb-4 text-center">Upcoming Fixtures</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-center mb-2 text-sm font-medium">{outPlayer.web_name}</div>
+              <FixtureRow team={{ team: outPlayer.team }} fixtures={playerFixtures.out} />
             </div>
             <div>
               <div className="text-center mb-2 text-sm font-medium">{inPlayer.web_name}</div>

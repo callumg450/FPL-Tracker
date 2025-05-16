@@ -17,7 +17,6 @@ app.use(express.json());
 async function fetchBootstrap() {
   const cached = cache.get('BOOTSTRAP');
   if (cached) {
-    console.log('fetchBootstrap returned from cache');
     return cached;
   }
   console.log('fetchBootstrap not in cache, fetching from FPL API');
@@ -50,7 +49,6 @@ async function fetchFixtures(eventId) {
   const cacheKey = eventId ? `FIXTURES_GW_${eventId}` : 'FIXTURES_ALL';
   const cached = cache.get(cacheKey);
   if (cached) {
-    console.log(`fetchFixtures returned from cache for ${cacheKey}`);
     return cached;
   }
   console.log(`fetchFixtures not in cache for ${cacheKey}, fetching from FPL API`);

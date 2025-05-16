@@ -22,16 +22,15 @@ function App() {
 
   return (
     <FplDataProvider>
-      <Router>
-        <div className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200 py-10 px-2">
-          <nav className="max-w-6xl mx-auto mb-8 flex gap-6 justify-center items-center">
-            <Link to="/" className="text-indigo-700 font-bold hover:underline">Fixtures</Link>
-            <Link to="/team-selector" className="text-indigo-700 font-bold hover:underline">Team Selector</Link>
-            <Link to="/my-team" className="text-indigo-700 font-bold hover:underline">My Team</Link>
-            <Link to="/leagues" className="text-indigo-700 font-bold hover:underline">Leagues</Link>
+      <Router>        <div className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200 py-10 px-2">
+          <nav className="max-w-6xl mx-auto mb-8 flex flex-wrap gap-3 justify-center items-center px-4">
+            <Link to="/" className="text-indigo-700 font-bold hover:underline text-sm sm:text-base">Fixtures</Link>
+            <Link to="/team-selector" className="text-indigo-700 font-bold hover:underline text-sm sm:text-base">Team Selector</Link>
+            <Link to="/my-team" className="text-indigo-700 font-bold hover:underline text-sm sm:text-base">My Team</Link>
+            <Link to="/leagues" className="text-indigo-700 font-bold hover:underline text-sm sm:text-base">Leagues</Link>
             <input
               type="text"
-              className="border rounded px-2 py-1 ml-4 w-32"
+              className="border rounded px-2 py-1 w-24 sm:w-32 text-sm"
               placeholder="User Id"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
