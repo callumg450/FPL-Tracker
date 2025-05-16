@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useFplData } from '../contexts/FplDataContext';
 
 type Team = {
   id: number;
@@ -20,22 +21,13 @@ const FixturePlayersModal = ({
   setOpen: (open: boolean) => void;
   setSelectedPlayer: (player: any) => void;
 }) => {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
+  const { players, teams, loading: fplLoading } = useFplData() as {
+    players: Player[];
+    teams: Team[];
+    loading: boolean;
+  };
   const [inFormPlayers, setInFormPlayers] = useState<any>({});
   const [inFormLoading, setInFormLoading] = useState(false);
-
-  useEffect(() => {
-    if (!open || !fixture) return;
-    // Fetch all players and teams
-    const fetchData = async () => {
-      const res = await fetch('http://localhost:5000/api/bootstrap-static');
-      const data = await res.json();
-      setPlayers(data.elements);
-      setTeams(data.teams);
-    };
-    fetchData();
-  }, [open, fixture]);
 
   // Calculate in-form players for each team in the fixture
   useEffect(() => {
@@ -89,6 +81,15 @@ const FixturePlayersModal = ({
   };
 
   if (!open || !fixture) return null;
+  if (fplLoading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full relative max-h-[80vh] flex flex-col items-center justify-center">
+          <span className="text-indigo-600 animate-pulse text-lg">Loading FPL data...</span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"

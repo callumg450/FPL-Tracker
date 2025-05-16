@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TeamFormation from '../components/TeamFormation';
-import TransferSuggestions from '../components/TransferSuggestions.jsx';
+import TransferSuggestions from '../components/TransferSuggestions';
 
 const POSITION_MAP: Record<number, string> = {
   1: 'Goalkeeper',
