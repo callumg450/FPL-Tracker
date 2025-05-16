@@ -87,8 +87,17 @@ app.get('/api/element-summary/:playerId', async (req, res) => {
 app.get('/api/user-team/:userId/:eventId', async (req, res) => {
   try {
     const { userId, eventId } = req.params;
+
+    const cacheKey = `USER_TEAM_GW_${userId}_${eventId}`;
+    const cached = cache.get(cacheKey);
+    if (cached){
+      console.log(`Cache hit for ${cacheKey}`); 
+      return cached;
+    }
+
     const response = await superagent.get(`https://fantasy.premierleague.com/api/entry/${userId}/event/${eventId}/picks/`);
     res.json(response.body);
+    cache.set(cacheKey, response.body);
   } catch (err) {
     console.error('Proxy error (user-team):', err.message);
     res.status(500).json({ error: 'Failed to fetch user team', details: err.message });
@@ -100,9 +109,18 @@ app.get('/api/user-team/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const eventId = await getCurrentGameweek();
+
+    const cacheKey = `USER_TEAM_GW_${userId}_${eventId}`;
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      console.log(`Cache hit for ${cacheKey}`); 
+      return cached;
+    }
+
     if (!eventId) throw new Error('Could not determine current gameweek');
     const response = await superagent.get(`https://fantasy.premierleague.com/api/entry/${userId}/event/${eventId}/picks/`);
     res.json(response.body);
+    cache.set(cacheKey, response.body);
   } catch (err) {
     console.error('Proxy error (user-team):', err);
     res.status(500).json({ error: 'Failed to fetch user team', details: err.message });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import PlayerCompareModal from './PlayerCompareModal';
 
 const API_BASE = 'http://localhost:5000/api';
@@ -9,7 +9,7 @@ const TransferSuggestions = ({ userId }) => {
   const [error, setError] = useState(null);
   const [teams, setTeams] = useState([]);
   const [allPlayers, setAllPlayers] = useState([]);
-  const [fixtures, setFixtures] = useState([]); // Add fixtures state
+  const [fixtures, setFixtures] = useState([]);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [comparePlayers, setComparePlayers] = useState({ out: null, in: null });
 
