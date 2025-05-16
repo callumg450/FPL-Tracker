@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TeamFormation from '../components/TeamFormation';
+import TransferSuggestions from '../components/TransferSuggestions.jsx';
 
 const POSITION_MAP: Record<number, string> = {
   1: 'Goalkeeper',
@@ -188,6 +189,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl p-8 mt-8">
       <h1 className="text-3xl font-bold text-center mb-8 text-blue-800">View FPL Team</h1>
+      {submittedUserId && <TransferSuggestions userId={submittedUserId} />}
       <form onSubmit={e => { e.preventDefault(); }} className="space-y-4">
         {/* Only show FPL User ID input if not already submitted */}
         {submittedUserId === '' && (

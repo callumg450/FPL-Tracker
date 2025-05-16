@@ -165,10 +165,9 @@ const TransferSuggestions = ({ userId }) => {
     );
   }
 
-  return (
-    <div className="bg-white rounded-lg shadow p-4 mb-6">
-      <h2 className="text-xl font-bold mb-2">Transfer Suggestions</h2>
-      {loading && <div>Loading suggestions...</div>}
+  return (    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg shadow-md p-6 mb-8 border border-indigo-100">
+      <h2 className="text-xl font-bold mb-4 text-indigo-800">Transfer Suggestions</h2>
+      {loading && <div className="text-gray-600">Loading suggestions...</div>}
       {error && <div className="text-red-500">{error}</div>}
       {!loading && !error && suggestions.length === 0 && (
         <div>No suggestions at this time.</div>

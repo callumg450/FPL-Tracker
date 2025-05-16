@@ -7,7 +7,6 @@ import PlayerDetailModal from './PlayerDetailModal.tsx';
 import FixturePlayersModal from './FixturePlayersModal.tsx';
 import MyTeam from '../pages/MyTeam.tsx';
 import Leagues from '../pages/Leagues.tsx';
-import TransferSuggestions from './TransferSuggestions.jsx'
 import { FplDataProvider } from '../contexts/FplDataContext.jsx'; // Adjust the import based on your file structure
 
 function App() {
@@ -38,9 +37,8 @@ function App() {
               onChange={(e) => setUserId(e.target.value)}
               title="Enter your FPL User Id"
             />
-          </nav>
+          </nav>          
           <div className="max-w-6xl mx-auto">
-            <TransferSuggestions userId={userId} />
             <Routes>
               <Route
                 path="/"
