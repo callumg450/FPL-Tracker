@@ -115,7 +115,9 @@ const FixturePlayersModal = ({
                 <span className="text-indigo-600 animate-pulse">Loading...</span>
               ) : inFormPlayers[teamId] ? (
                 <div className="flex items-center gap-2 bg-green-100 px-3 py-1 rounded-full">
-                  <img src={getTeamLogo(teamId)} alt={getTeam(teamId)?.name} className="w-6 h-6 inline-block align-middle" />
+                  {getTeamLogo(teamId) ? (
+                    <img src={getTeamLogo(teamId)} alt={getTeam(teamId)?.name} className="w-6 h-6 inline-block align-middle" />
+                  ) : null}
                   <span className="font-semibold text-green-800">{inFormPlayers[teamId].player.web_name}</span>
                   <span className="text-xs text-green-700">({inFormPlayers[teamId].last3Points} pts last 3)</span>
                 </div>
@@ -129,7 +131,9 @@ const FixturePlayersModal = ({
           {[fixture.team_h, fixture.team_a].map(teamId => (
             <div key={teamId}>
               <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                <img src={getTeamLogo(teamId)} alt={getTeam(teamId)?.name} className="w-6 h-6 inline-block align-middle" />
+                {getTeamLogo(teamId) ? (
+                  <img src={getTeamLogo(teamId)} alt={getTeam(teamId)?.name} className="w-6 h-6 inline-block align-middle" />
+                ) : null}
                 {getTeam(teamId)?.name}
               </h3>
               <ul className="space-y-1">
