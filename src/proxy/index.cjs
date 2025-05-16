@@ -3,6 +3,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const express = require('express');
 const cors = require('cors');
 const superagent = require('superagent');
+const cache = require('./cache.cjs');
 let fplSessionCookie = null;
 let fplUserId = null;
 
@@ -14,7 +15,14 @@ app.use(express.json());
 
 // Helper function to fetch bootstrap-static
 async function fetchBootstrap() {
+  const cached = cache.get('BOOTSTRAP');
+  if (cached) {
+    console.log('fetchBootstrap returned from cache');
+    return cached;
+  }
+  console.log('fetchBootstrap not in cache, fetching from FPL API');
   const response = await superagent.get('https://fantasy.premierleague.com/api/bootstrap-static/');
+  cache.set('BOOTSTRAP', response.body);
   return response.body;
 }
 
@@ -38,8 +46,18 @@ app.get('/api/bootstrap-static', async (req, res) => {
 
 // Helper function to fetch fixtures
 async function fetchFixtures(eventId) {
+  // Use specific cache keys for different gameweeks
+  const cacheKey = eventId ? `FIXTURES_GW_${eventId}` : 'FIXTURES_ALL';
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    console.log(`fetchFixtures returned from cache for ${cacheKey}`);
+    return cached;
+  }
+  console.log(`fetchFixtures not in cache for ${cacheKey}, fetching from FPL API`);
   const query = eventId !== undefined ? '?event=' + eventId : '';
   const response = await superagent.get(`https://fantasy.premierleague.com/api/fixtures/${query}`);
+  cache.set(cacheKey, response.body);
+  console.log(`fetchFixtures cached data for ${cacheKey}`);
   return response.body;
 }
 
@@ -64,20 +82,6 @@ app.get('/api/element-summary/:playerId', async (req, res) => {
   } catch (err) {
     console.error('Proxy error (element-summary):', err);
     res.status(500).json({ error: 'Failed to fetch player summary', details: err.message });
-  }
-});
-
-// Endpoint to get current user's team
-app.get('/api/my-team', async (req, res) => {
-  try {
-    if (!fplSessionCookie || !fplUserId) throw new Error('Not authenticated');
-    const teamRes = await superagent
-      .get(`https://fantasy.premierleague.com/api/my-team/${fplUserId}/`)
-      .set('cookie', fplSessionCookie);
-    res.json(teamRes.body);
-  } catch (err) {
-    console.error('FPL my-team error:', err.message);
-    res.status(401).json({ error: 'Could not fetch team', details: err.message });
   }
 });
 
