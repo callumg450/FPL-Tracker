@@ -98,27 +98,25 @@ const TransferSuggestions = ({ userId }) => {
           );
           if (!fixture) return null;
           return fixture.team_h === team.id ? fixture.team_h_difficulty : fixture.team_a_difficulty;
-        };
-
-        const alreadyInTeam = (id) => userPlayerIds.includes(id);
+        };        const alreadyInTeam = (id) => userPlayerIds.includes(id);
+        const suggestedReplacements = new Set(); // Track suggested replacements
         const findReplacement = (outPlayer) => {
           return allPlayersData
             .filter(p => {
-
               const fixtureDifficulty = getNextFixtureDifficulty(p);
 
               return p.element_type === outPlayer.element_type &&
               p.status === 'a' &&
               !alreadyInTeam(p.id) &&
+              !suggestedReplacements.has(p.id) && // Don't suggest players already suggested
               parseFloat(p.form) > 4.0 &&
               p.now_cost <= outPlayer.now_cost + userBank * 10 &&
-              getNextFixtureDifficulty(p) !== null &&
-              getNextFixtureDifficulty(p) <= 3 // Only suggest if next fixture is not too difficult
+              fixtureDifficulty !== null &&
+              fixtureDifficulty <= 3 // Only suggest if next fixture is not too difficult
           })
             .sort((a, b) => parseFloat(b.form) - parseFloat(a.form))
             [0];
-        };
-        // Flagged players
+        };        // Flagged players
         for (const p of flagged) {
           const replacement = findReplacement(p);
           if (replacement) {
@@ -130,6 +128,7 @@ const TransferSuggestions = ({ userId }) => {
               inForm: parseFloat(replacement.form),
               nextFixture: getFixtureShort(replacement),
             });
+            suggestedReplacements.add(replacement.id); // Track that we've suggested this player
           }
         }
         // Poor form players (avoid duplicates)
@@ -145,6 +144,7 @@ const TransferSuggestions = ({ userId }) => {
               inForm: parseFloat(replacement.form),
               nextFixture: getFixtureShort(replacement),
             });
+            suggestedReplacements.add(replacement.id); // Track that we've suggested this player
           }
         }
         setSuggestions(suggestions);      } catch (err) {
