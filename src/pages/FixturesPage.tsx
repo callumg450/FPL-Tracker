@@ -24,8 +24,6 @@ const FixturesPage = ({ setSelectedPlayer, setFixtureModal }: { setSelectedPlaye
   const [error, setError] = useState<string | null>(null);
   const [selectedFixture, setSelectedFixture] = useState<Fixture | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [inFormPlayers, setInFormPlayers] = useState<any>({});
-  const [inFormLoading, setInFormLoading] = useState(false);
   const [allFixtures, setAllFixtures] = useState<Fixture[]>([]);
 
   // Fetch bootstrap-static (teams, events, players)

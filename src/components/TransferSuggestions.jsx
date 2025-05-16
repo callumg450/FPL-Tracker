@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import PlayerCompareModal from './PlayerCompareModal';
+import PlayerCompareModal from './PlayerCompareModal.jsx';
+import { useFplData } from '../contexts/FplDataContext.jsx';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -7,16 +8,19 @@ const TransferSuggestions = ({ userId }) => {
   const [loading, setLoading] = useState(true);
   const [suggestions, setSuggestions] = useState([]);
   const [error, setError] = useState(null);
-  const [teams, setTeams] = useState([]);
   const [allPlayers, setAllPlayers] = useState([]);
-  const [fixtures, setFixtures] = useState([]);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [comparePlayers, setComparePlayers] = useState({ out: null, in: null });
+  const { fixtures, events, rawBootstrapData, teams, loading: fplLoading } = useFplData();
 
   useEffect(() => {
     if (!userId) {
       setLoading(false);
       setSuggestions([]);
+      return;
+    }
+    // Wait for FPL data to be loaded
+    if (!rawBootstrapData || !rawBootstrapData.elements || !teams || teams.length === 0) {
       return;
     }
     const fetchSuggestions = async () => {
@@ -28,18 +32,11 @@ const TransferSuggestions = ({ userId }) => {
         if (!teamRes.ok) throw new Error('Could not fetch user team');
         const teamData = await teamRes.json();
 
-        // Fetch all player data
-        const playerRes = await fetch(`${API_BASE}/bootstrap-static`);
-        if (!playerRes.ok) throw new Error('Could not fetch player data');
-        const playerData = await playerRes.json();
-        
         // --- Suggestion Logic ---
-        const teamsData = playerData.teams;
-        const allPlayersData = playerData.elements.map(player => ({
+        const allPlayersData = rawBootstrapData.elements.map(player => ({
           ...player,
-          team_short_name: teamsData.find(t => t.id === player.team)?.short_name || ''
+          team_short_name: teams.find(t => t.id === player.team)?.short_name || ''
         }));
-        setTeams(teamsData);
         setAllPlayers(allPlayersData);
 
         const userPicks = teamData.picks || [];
@@ -57,39 +54,29 @@ const TransferSuggestions = ({ userId }) => {
         const suggestions = [];
 
         // Get current and next gameweek info
-        const events = playerData.events || [];
         const currentEvent = events.find(e => e.is_current);
         const nextEvent = events.find(e => e.is_next);
         const gwId = nextEvent ? nextEvent.id : (currentEvent ? currentEvent.id : null);
 
-        // Fetch all upcoming fixtures from the proxy (not just next gameweek)
-        const fixturesRes = await fetch(`${API_BASE}/fixtures`);
-        let fixtures = [];
-        if (fixturesRes.ok) {
-          const allFixtures = await fixturesRes.json();
-          // Filter to only include fixtures that haven't been played yet
-          fixtures = allFixtures.filter(f => !f.finished);
-          // Store all upcoming fixtures in state for PlayerCompareModal
-          setFixtures(fixtures);
-        }
+        const finishedFixtures = fixtures.filter(f => !f.finished);
 
         const getFixtureShort = (player) => {
-          const team = teamsData.find(t => t.id === player.team);
-          if (!team || !fixtures.length) return '';
+          const team = teams.find(t => t.id === player.team);
+          if (!team || !finishedFixtures.length) return '';
           // Find the next fixture for this team
-          const fixture = fixtures.find(f => 
+          const fixture = finishedFixtures.find(f => 
             f.event === gwId && 
             (f.team_h === team.id || f.team_a === team.id)
           );
           if (!fixture) return '';
           const oppId = fixture.team_h === team.id ? fixture.team_a : fixture.team_h;
-          const oppTeam = teamsData.find(t => t.id === oppId);
+          const oppTeam = teams.find(t => t.id === oppId);
           const homeAway = fixture.team_h === team.id ? 'H' : 'A';
           return oppTeam ? `${oppTeam.short_name} (${homeAway})` : '';
         };
 
         const getNextFixtureDifficulty = (player) => {
-          const team = teamsData.find(t => t.id === player.team);
+          const team = teams.find(t => t.id === player.team);
           if (!team || !fixtures.length) return null;
           // Find the next fixture for this team
           const fixture = fixtures.find(f => 
@@ -98,7 +85,8 @@ const TransferSuggestions = ({ userId }) => {
           );
           if (!fixture) return null;
           return fixture.team_h === team.id ? fixture.team_h_difficulty : fixture.team_a_difficulty;
-        };        const alreadyInTeam = (id) => userPlayerIds.includes(id);
+        };        
+        const alreadyInTeam = (id) => userPlayerIds.includes(id);
         const suggestedReplacements = new Set(); // Track suggested replacements
         const findReplacement = (outPlayer) => {
           return allPlayersData
@@ -154,8 +142,17 @@ const TransferSuggestions = ({ userId }) => {
       setLoading(false);
     };
     fetchSuggestions();
-  }, [userId]);
+  }, [userId, rawBootstrapData, teams]);
 
+  if (fplLoading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full relative max-h-[80vh] flex flex-col items-center justify-center">
+          <span className="text-indigo-600 animate-pulse text-lg">Loading FPL data...</span>
+        </div>
+      </div>
+    );
+  }
   if (!userId) {
     return (
       <div className="bg-white rounded-lg shadow p-4 mb-6">
@@ -164,6 +161,8 @@ const TransferSuggestions = ({ userId }) => {
       </div>
     );
   }
+
+    
 
   return (    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg shadow-md p-6 mb-8 border border-indigo-100">
       <h2 className="text-xl font-bold mb-4 text-indigo-800">Transfer Suggestions</h2>

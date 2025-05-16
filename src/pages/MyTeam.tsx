@@ -53,6 +53,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [entryHistory, setEntryHistory] = useState<EntryHistory | null>(null);
   const [teams, setTeams] = useState<any[]>([]);
+  const [fixtures, setFixtures] = useState([]);
 
   // Fetch all players and events on mount
   useEffect(() => {
@@ -75,7 +76,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
     }
     fetch(`http://localhost:5000/api/event/${selectedEventId}/live/`)
       .then(res => res.json())
-      .then(data => setLiveData(data.elements || []));
+      .then(data => {console.log(data.elements); setLiveData(data.elements || [])});
   }, [selectedEventId]);
 
   // Fetch team for selected gameweek (only when submittedUserId changes)
@@ -109,6 +110,14 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
       .then(data => setTeams(data.teams || []));
   }, []);
 
+  // Fetch fixtures for selected gameweek
+  useEffect(() => {
+    if (!selectedEventId) return;
+    fetch(`http://localhost:5000/api/fixtures?event=${selectedEventId}`)
+      .then(res => res.json())
+      .then(data => setFixtures(data || []));
+  }, [selectedEventId]);
+
   useEffect(() => {
     setInputUserId(userId || '');
     setSubmittedUserId(userId || '');
@@ -139,21 +148,6 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
       }
     });
   }
-
-  // Helper to get points and bonus for a player for the selected gameweek
-  const getPointsAndBonus = (elementId: number) => {
-    if (liveData) {
-      const live = liveData.find((el: any) => el.id === elementId);
-      if (live && live.stats.minutes > 0) {
-        return {
-          points: live.stats.total_points,
-          bonus: live.stats.bonus > 0 ? live.stats.bonus : null,
-        };
-      }
-      return null;
-    }
-    return null;
-  };
 
   // Helper to get total score for the selected gameweek
   const getTotalScore = () => {
@@ -254,7 +248,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
               </div>
             );
           })()}
-          <TeamFormation picks={team.picks} players={players} liveData={liveData} showPoints={true} teams={teams} />
+          <TeamFormation picks={team.picks} players={players} liveData={liveData} showPoints={true} teams={teams} fixtures={fixtures} />
         </div>
       )}
     </div>
