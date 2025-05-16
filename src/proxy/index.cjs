@@ -121,12 +121,10 @@ app.get('/api/event/:eventId/live/', async (req, res) => {
 
 // Endpoint to get entry history (ranks, points, etc) for a user
 app.get('/api/entry-history/:userId', async (req, res) => {
-  console.log(`[Proxy] GET /api/entry-history/${req.params.userId}`);
   try {
     const { userId } = req.params;
     const fplApiUrl = `https://fantasy.premierleague.com/api/entry/${userId}/history/`;
     const response = await superagent.get(fplApiUrl);
-    console.log('Response from FPL API:', response.body);
     res.json(response.body);
   } catch (err) {
     console.error('Proxy error (entry-history):', err.message);
@@ -170,6 +168,20 @@ app.get('/api/leagues-h2h/:leagueId/standings/', async (req, res) => {
   } catch (err) {
     console.error('Proxy error (leagues-h2h):', err.message);
     res.status(500).json({ error: 'Failed to fetch h2h league standings', details: err.message });
+  }
+});
+
+// Endpoint to get overall league standings for a specific gameweek (simple, no userId logic)
+app.get('/api/overall-league-standings/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const overallLeagueId = 314;
+    // Just fetch the first page (top 50) for the event
+    const response = await superagent.get(`https://fantasy.premierleague.com/api/leagues-classic/${overallLeagueId}/standings/?event=${eventId}&page_standings=1`);
+    res.json(response.body);
+  } catch (err) {
+    console.error('Proxy error (overall-league-standings):', err.message);
+    res.status(500).json({ error: 'Failed to fetch overall league standings', details: err.message });
   }
 });
 

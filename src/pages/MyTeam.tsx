@@ -235,7 +235,6 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
           {/* Rank info */}
           {(() => {
             const rank = getRankInfo();
-            console.log('Rank Info:', rank);
             if (!rank) return null;
             return (
               <div className="text-center text-base font-semibold text-gray-700 mb-4">

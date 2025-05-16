@@ -7,6 +7,7 @@ import PlayerDetailModal from './PlayerDetailModal.tsx';
 import FixturePlayersModal from './FixturePlayersModal.tsx';
 import MyTeam from '../pages/MyTeam.tsx';
 import Leagues from '../pages/Leagues.tsx';
+import TransferSuggestions from './TransferSuggestions';
 
 function App() {
   // Only keep userId and modal state in App
@@ -37,6 +38,7 @@ function App() {
           />
         </nav>
         <div className="max-w-6xl mx-auto">
+          <TransferSuggestions userId={userId} />
           <Routes>
             <Route
               path="/"
