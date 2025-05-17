@@ -63,7 +63,7 @@ const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => 
   const { fixtures, events, rawBootstrapData, teams, loading: fplLoading } = useFplData() as {
     fixtures: FPLFixture[];
     events: FPLEvent[];
-    rawBootstrapData: { elements: FPLPlayer[]; teams: FPLTeam[]; events: FPLEvent[] };
+    rawBootstrapData: any;
     teams: FPLTeam[];
     loading: boolean;
   };
@@ -268,8 +268,6 @@ const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => 
         onClose={() => setIsCompareOpen(false)}
         outPlayer={comparePlayers.out}
         inPlayer={comparePlayers.in}
-        teams={teams}
-        fixtures={fixtures}
       />
     </div>
   );

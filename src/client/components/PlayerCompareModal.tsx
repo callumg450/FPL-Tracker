@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
-const API_BASE = 'http://localhost:5000/api';
+import { useFplData } from '../contexts/FplDataContext';
 
 interface StatRowProps {
   label: string;
@@ -88,11 +87,15 @@ interface PlayerCompareModalProps {
   onClose: () => void;
   outPlayer: Player | null;
   inPlayer: Player | null;
-  teams: Team[];
-  fixtures: Fixture[];
 }
 
-const PlayerCompareModal: React.FC<PlayerCompareModalProps> = ({ isOpen, onClose, outPlayer, inPlayer, teams, fixtures }) => {
+const PlayerCompareModal: React.FC<PlayerCompareModalProps> = ({ isOpen, onClose, outPlayer, inPlayer }) => {
+  const { teams, fixtures, loading, error } = useFplData() as {
+    fixtures: Fixture[];
+    teams: Team[];
+    loading: boolean;
+    error: string | null;
+  };
   const [playerFixtures, setPlayerFixtures] = useState<{ out: Fixture[]; in: Fixture[] }>({ out: [], in: [] });
 
   useEffect(() => {
@@ -120,6 +123,20 @@ const PlayerCompareModal: React.FC<PlayerCompareModalProps> = ({ isOpen, onClose
   }, [isOpen, outPlayer, inPlayer, teams, fixtures]);
 
   if (!isOpen || !outPlayer || !inPlayer) return null;
+  if (loading) return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto text-center">
+        Loading FPL data...
+      </div>
+    </div>
+  );
+  if (error) return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto text-center text-red-600">
+        Error loading FPL data: {error}
+      </div>
+    </div>
+  );
 
   return (
     <div

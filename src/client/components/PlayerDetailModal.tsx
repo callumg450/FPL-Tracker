@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useFplData } from '../contexts/FplDataContext';
 
 const PlayerDetailModal = ({
   player,
@@ -8,12 +9,15 @@ const PlayerDetailModal = ({
   onClose: () => void;
 }) => {
   const [playerSummary, setPlayerSummary] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingPlayerDetails, setLoadingPlayerDetails] = useState(false);
   const [team, setTeam] = useState<any>(null);
-
+  const { rawBootstrapData, loading } = useFplData() as {
+    rawBootstrapData: any;
+    loading: boolean;
+  };
   useEffect(() => {
     if (!player) return;
-    setLoading(true);
+    setLoadingPlayerDetails(true);
     const fetchSummary = async () => {
       try {
         const res = await fetch(`http://localhost:5000/api/element-summary/${player.id}/`);
@@ -22,7 +26,7 @@ const PlayerDetailModal = ({
       } catch {
         setPlayerSummary(null);
       } finally {
-        setLoading(false);
+        setLoadingPlayerDetails(false);
       }
     };
     fetchSummary();
@@ -31,15 +35,20 @@ const PlayerDetailModal = ({
   useEffect(() => {
     if (!player) return;
     // Fetch team info for player
-    const fetchTeam = async () => {
-      const res = await fetch('http://localhost:5000/api/bootstrap-static');
-      const data = await res.json();
-      setTeam(data.teams.find((t: any) => t.id === player.team));
-    };
-    fetchTeam();
+    setTeam(rawBootstrapData.teams.find((t: any) => t.id === player.team));
   }, [player]);
 
-  if (!player) return null;
+  //if player of rawBootstrapData is not loaded yet, return null
+  if (!player ) return null;
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full relative max-h-[80vh] flex flex-col items-center justify-center">
+          <span className="text-indigo-600 animate-pulse text-lg">Loading FPL data...</span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full relative max-h-[90vh] flex flex-col overflow-y-auto">
@@ -74,7 +83,7 @@ const PlayerDetailModal = ({
             <div>{player.selected_by_percent}%</div>
           </div>
         </div>
-        {loading ? (
+        {loadingPlayerDetails ? (
           <div className="text-center text-indigo-600 animate-pulse">Loading player details...</div>
         ) : playerSummary ? (
           <>
