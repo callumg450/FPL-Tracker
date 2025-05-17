@@ -22,7 +22,8 @@ function App() {
 
   return (
     <FplDataProvider>
-      <Router>        <div className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200 py-10 px-2">
+      <Router>        
+        <div className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200 py-10 px-2">
           <nav className="max-w-6xl mx-auto mb-8 flex flex-wrap gap-3 justify-center items-center px-4">
             <Link to="/" className="text-indigo-700 font-bold hover:underline text-sm sm:text-base">Fixtures</Link>
             <Link to="/team-selector" className="text-indigo-700 font-bold hover:underline text-sm sm:text-base">Team Selector</Link>
