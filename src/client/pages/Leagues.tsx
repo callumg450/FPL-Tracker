@@ -51,6 +51,19 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
       .catch(err => setError(err.message || 'Fetch failed'))
       .finally(() => setLoadingLeagues(false));
   }, [userId]);
+  // Calculate live points for a team's picks
+  const calculateLivePoints = (picks: any[], liveData: any[]) => {
+    return picks.reduce((total, pick) => {
+      const playerData = liveData.find(p => p.id === pick.element);
+      if (playerData) {
+        const points = playerData.stats.total_points;
+        // Apply captain/vice-captain multiplier
+        const multiplier = pick.multiplier;
+        return total + (points * multiplier);
+      }
+      return total;
+    }, 0);
+  };
 
   // Fetch standings for selected league
   const fetchStandings = async (league: UserLeague) => {
@@ -66,7 +79,52 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch league standings');
       const data = await res.json();
-      setStandings(data.standings?.results || []);
+      
+      // Get live data and picks for all teams
+      if (currentEventId && data.standings?.results) {
+        const liveRes = await fetch(`http://localhost:5000/api/event/${currentEventId}/live/`);
+        if (!liveRes.ok) throw new Error('Failed to fetch live data');
+        const liveData = await liveRes.json();
+
+        // Fetch each team's picks and calculate live points
+        const teamsWithLivePoints = await Promise.all(
+          data.standings.results.map(async (entry: any) => {
+            try {
+              const picksRes = await fetch(`http://localhost:5000/api/user-team/${entry.entry}/${currentEventId}`);
+              if (!picksRes.ok) return entry;
+              const picksData = await picksRes.json();
+              
+              const livePoints = calculateLivePoints(picksData.picks, liveData.elements);
+              // Add transfer cost
+              const eventTotal = livePoints - (picksData.entry_history?.event_transfers_cost || 0);
+              
+              return {
+                ...entry,
+                event_total: eventTotal // Override event_total with live points
+              };
+            } catch (err) {
+              console.error(`Failed to fetch picks for entry ${entry.entry}:`, err);
+              return entry;
+            }
+          })
+        );
+
+        // Sort by total points including live points
+        const sortedTeams = teamsWithLivePoints.sort((a, b) => 
+          ((b.total - b.event_total + b.event_total) - (a.total - a.event_total + a.event_total))
+        );
+
+        // Update ranks
+        const teamsWithUpdatedRanks = sortedTeams.map((team, index) => ({
+          ...team,
+          rank: index + 1
+        }));
+
+        setStandings(teamsWithUpdatedRanks);
+      } else {
+        setStandings(data.standings?.results || []);
+      }
+      
       setLeagueName(data.league?.name || '');
     } catch (err: any) {
       setError(err.message || 'Fetch failed');
@@ -131,13 +189,18 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
       .then(res => res.json())
       .then(data => setLiveData(data.elements || []));
   }, [currentEventId]);
-
   const [teams, setTeams] = useState<any[]>([]);
-  // Fetch all teams on mount
+  const [fixtures, setFixtures] = useState<any[]>([]);
+
+  // Fetch all teams and fixtures on mount
   useEffect(() => {
-    fetch('http://localhost:5000/api/bootstrap-static')
-      .then(res => res.json())
-      .then(data => setTeams(data.teams || []));
+    Promise.all([
+      fetch('http://localhost:5000/api/bootstrap-static').then(res => res.json()),
+      fetch('http://localhost:5000/api/fixtures').then(res => res.json())
+    ]).then(([bootstrapData, fixturesData]) => {
+      setTeams(bootstrapData.teams || []);
+      setFixtures(fixturesData || []);
+    });
   }, []);
 
   return (
@@ -243,8 +306,14 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
                       Chip played: {entryPicks.active_chip.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                     </span>
                   </div>
-                )}
-                <TeamFormation picks={entryPicks.picks} players={allPlayers} liveData={liveData} showPoints={true} teams={teams} />
+                )}                <TeamFormation 
+                  picks={entryPicks.picks} 
+                  players={allPlayers} 
+                  liveData={liveData} 
+                  showPoints={true} 
+                  teams={teams}
+                  fixtures={fixtures.filter(f => !f.finished)} // Only pass unfinished fixtures for live bonus
+                />
               </>
             ) : entryPicks && entryPicks.error ? (
               <div className="text-center text-red-500">{entryPicks.error}</div>

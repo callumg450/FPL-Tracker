@@ -62,33 +62,65 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
         }
       }
     });
-  }
-
-  // Helper to get bonus points for a player from fixtures (live bonus)
+  }  // Helper to get bonus points for a player from fixtures (live bonus)
   const getLiveBonusFromFixtures = (elementId: number): number | null => {
     if (!fixtures || !fixtures.length) return null;
+    
     for (const fixture of fixtures) {
+      // Check if player is in this fixture
+      const isInFixture = fixture.stats?.some((s: any) => {
+        if (s.identifier === 'bps') {
+          return [...(s.h || []), ...(s.a || [])].some(p => p.element === elementId);
+        }
+        return false;
+      });
+
+      if (!isInFixture) continue;
       if (!fixture.stats) continue;
+
+      // First check if official bonus points are available
       const bonusObj = fixture.stats.find((s: any) => s.identifier === 'bonus');
       if (bonusObj) {
         const allBonus = [...(bonusObj.h || []), ...(bonusObj.a || [])];
         const found = allBonus.find((b: any) => b.element === elementId);
         if (found) return found.value;
       }
+
+      // If no official bonus, calculate from BPS
+      const bpsObj = fixture.stats.find((s: any) => s.identifier === 'bps');
+      if (bpsObj) {
+        // Combine and sort all BPS entries
+        const allBps = [
+          ...(bpsObj.h || []).map((entry: any) => ({ ...entry })),
+          ...(bpsObj.a || []).map((entry: any) => ({ ...entry }))
+        ].sort((a, b) => b.value - a.value);
+
+        // Assign bonus points based on BPS ranking (top 3 get 3,2,1 points)
+        const bonusPoints = allBps.slice(0, 3).map((entry, index) => ({
+          element: entry.element,
+          bonus: 3 - index
+        }));
+
+        // Find if our player gets any bonus
+        const playerBonus = bonusPoints.find(b => b.element === elementId);
+        if (playerBonus) return playerBonus.bonus;
+      }
     }
     return null;
   };
-
   // Helper to get points and bonus for a player for the selected gameweek
   const getPointsAndBonus = (elementId: number) => {
     if (liveData && liveData.length) {
       const live = liveData.find((el: any) => el.id === elementId);
       if (live) {
-        // Use live bonus from fixtures if available
-        const bonus = getLiveBonusFromFixtures(elementId);
+        // Always try to get bonus points from fixtures first
+        const liveBonus = getLiveBonusFromFixtures(elementId);
+        // If no live bonus available, check for stored bonus in liveData
+        const bonus = liveBonus !== null ? liveBonus : (live.stats.bonus || null);
+        
         return {
           points: live.stats.total_points,
-          bonus: bonus !== null ? bonus : (live.stats.bonus > 0 ? live.stats.bonus : null),
+          bonus: bonus
         };
       }
       return null;
