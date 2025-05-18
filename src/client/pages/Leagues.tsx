@@ -50,13 +50,63 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
       })
       .catch(err => setError(err.message || 'Fetch failed'))
       .finally(() => setLoadingLeagues(false));
-  }, [userId]);
+  }, [userId]);  // Calculate bonus points for a player from live fixtures
+  const getLiveBonus = (elementId: number, unfinishedFixtures: any[]): number | null => {
+    if (!unfinishedFixtures?.length) return null;
+    
+    for (const fixture of unfinishedFixtures) {
+      // Check if player is in this fixture
+      const isInFixture = fixture.stats?.some((s: any) => {
+        if (s.identifier === 'bps') {
+          return [...(s.h || []), ...(s.a || [])].some(p => p.element === elementId);
+        }
+        return false;
+      });
+
+      if (!isInFixture) continue;
+      
+      // First check if official bonus points are available
+      const bonusObj = fixture.stats?.find((s: any) => s.identifier === 'bonus');
+      if (bonusObj) {
+        const allBonus = [...(bonusObj.h || []), ...(bonusObj.a || [])];
+        const found = allBonus.find((b: any) => b.element === elementId);
+        if (found) return found.value;
+      }
+
+      // If no official bonus, calculate from BPS
+      const bpsObj = fixture.stats?.find((s: any) => s.identifier === 'bps');
+      if (bpsObj) {
+        const allBps = [
+          ...(bpsObj.h || []).map((entry: any) => ({ ...entry })),
+          ...(bpsObj.a || []).map((entry: any) => ({ ...entry }))
+        ].sort((a, b) => b.value - a.value);
+
+        // Assign bonus points based on BPS ranking (top 3 get 3,2,1 points)
+        const bonusPoints = allBps.slice(0, 3).map((entry, index) => ({
+          element: entry.element,
+          bonus: 3 - index
+        }));
+
+        const playerBonus = bonusPoints.find(b => b.element === elementId);
+        if (playerBonus) return playerBonus.bonus;
+      }
+    }
+    return null;
+  };
+
   // Calculate live points for a team's picks
   const calculateLivePoints = (picks: any[], liveData: any[]) => {
     return picks.reduce((total, pick) => {
       const playerData = liveData.find(p => p.id === pick.element);
       if (playerData) {
-        const points = playerData.stats.total_points;
+        let points = playerData.stats.total_points;
+        
+        // Add provisional bonus points for live games
+        const liveBonus = getLiveBonus(pick.element, fixtures.filter(f => !f.finished));
+        if (liveBonus) {
+          points += liveBonus;
+        }
+        
         // Apply captain/vice-captain multiplier
         const multiplier = pick.multiplier;
         return total + (points * multiplier);
@@ -93,26 +143,25 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
               const picksRes = await fetch(`http://localhost:5000/api/user-team/${entry.entry}/${currentEventId}`);
               if (!picksRes.ok) return entry;
               const picksData = await picksRes.json();
-              
-              const livePoints = calculateLivePoints(picksData.picks, liveData.elements);
+                const livePoints = calculateLivePoints(picksData.picks, liveData.elements);
               // Add transfer cost
               const eventTotal = livePoints - (picksData.entry_history?.event_transfers_cost || 0);
               
+              // Calculate total points by replacing the old gameweek score with the new live score
+              const totalPoints = entry.total - entry.event_total + eventTotal;
+              
               return {
                 ...entry,
-                event_total: eventTotal // Override event_total with live points
+                event_total: eventTotal, // Override event_total with live points
+                total: totalPoints // Update total points with live score
               };
             } catch (err) {
               console.error(`Failed to fetch picks for entry ${entry.entry}:`, err);
               return entry;
             }
           })
-        );
-
-        // Sort by total points including live points
-        const sortedTeams = teamsWithLivePoints.sort((a, b) => 
-          ((b.total - b.event_total + b.event_total) - (a.total - a.event_total + a.event_total))
-        );
+        );        // Sort by total points (which now includes live points)
+        const sortedTeams = teamsWithLivePoints.sort((a, b) => b.total - a.total);
 
         // Update ranks
         const teamsWithUpdatedRanks = sortedTeams.map((team, index) => ({
