@@ -338,12 +338,34 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
             </>
           )}
         </>
-      )}
-      {selectedEntry && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full relative">
-            <button className="absolute top-2 right-2 text-xl font-bold text-gray-500 hover:text-gray-800" onClick={() => { setSelectedEntry(null); setEntryPicks(null); }}>&times;</button>
-            <h3 className="text-lg font-bold mb-2 text-indigo-800 text-center">{selectedEntry.entry_name} ({selectedEntry.player_name})</h3>
+      )}      {selectedEntry && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4 overflow-y-auto"
+          onClick={(e) => {
+            // Only close if clicking the outer container
+            if (e.target === e.currentTarget) {
+              setSelectedEntry(null);
+              setEntryPicks(null);
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 w-full max-w-3xl my-4 relative max-h-[90vh] overflow-y-auto"
+            onClick={(e) => {
+              // Stop click from reaching the overlay
+              e.stopPropagation();
+            }}
+          >
+            <button 
+              className="absolute top-2 right-2 text-xl font-bold text-gray-500 hover:text-gray-800 z-10" 
+              onClick={() => { 
+                setSelectedEntry(null); 
+                setEntryPicks(null); 
+              }}
+            >
+              &times;
+            </button>
+            <h3 className="text-lg font-bold mb-2 text-indigo-800 text-center pr-8">{selectedEntry.entry_name} ({selectedEntry.player_name})</h3>
             {loadingPicks ? (
               <div className="text-center text-gray-500">Loading team...</div>
             ) : entryPicks && entryPicks.picks && entryPicks.picks.length > 0 ? (

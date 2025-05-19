@@ -7,7 +7,8 @@ import PlayerDetailModal from './PlayerDetailModal.tsx';
 import FixturePlayersModal from './FixturePlayersModal.tsx';
 import MyTeam from '../pages/MyTeam.tsx';
 import Leagues from '../pages/Leagues.tsx';
-import { FplDataProvider } from '../contexts/FplDataContext.jsx'; // Adjust the import based on your file structure
+import BonusPoints from '../pages/BonusPoints.tsx';
+import { FplDataProvider } from '../contexts/FplDataContext.jsx';
 
 function App() {
   // Only keep userId and modal state in App
@@ -29,6 +30,7 @@ function App() {
             <Link to="/team-selector" className="text-indigo-700 font-bold hover:underline text-sm sm:text-base">Team Selector</Link>
             <Link to="/my-team" className="text-indigo-700 font-bold hover:underline text-sm sm:text-base">My Team</Link>
             <Link to="/leagues" className="text-indigo-700 font-bold hover:underline text-sm sm:text-base">Leagues</Link>
+            <Link to="/bonus-points" className="text-indigo-700 font-bold hover:underline text-sm sm:text-base">Bonus Points</Link>
             <input
               type="text"
               className="border rounded px-2 py-1 w-24 sm:w-32 text-sm"
@@ -48,10 +50,11 @@ function App() {
                     setFixtureModal={setFixtureModal}
                   />
                 }
-              />
-              <Route path="/team-selector" element={<TeamSelector />} />
+              />              <Route path="/team-selector" element={<TeamSelector />} />
               <Route path="/my-team" element={<MyTeam userId={userId} />} />
               <Route path="/leagues" element={<Leagues userId={userId} />} />
+              <Route path="/bonus-points" element={<BonusPoints />} />
+              <Route path="/bonus-points" element={<BonusPoints />} />
             </Routes>
           </div>
           {/* Fixture modal and player modal are controlled by App, but data/logic is in children */}
