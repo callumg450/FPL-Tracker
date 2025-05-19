@@ -5,6 +5,7 @@ const FplDataContext = createContext(null);
 
 export const FplDataProvider = ({ children }) => {
   const [bootstrapData, setBootstrapData] = useState(null);
+  const [allFixtures, setAllFixtures] = useState([]);
   const [fixtures, setFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,6 +23,8 @@ export const FplDataProvider = ({ children }) => {
         const fixturesRes = await fetch(`${API_BASE}/fixtures`);
         if (fixturesRes.ok) {
           const allFixtures = await fixturesRes.json();
+          setAllFixtures(allFixtures);
+          
           // Filter to only include fixtures that haven't been played yet
           const upcomingFixtures = allFixtures.filter(f => !f.finished);
           setFixtures(upcomingFixtures);
@@ -58,7 +61,8 @@ export const FplDataProvider = ({ children }) => {
       teams: bootstrapData?.teams || [],
       players: enrichedPlayers,
       events: bootstrapData?.events || [],
-      fixtures,
+      fixtures, //Upcoming fixtures,
+      allFixtures: allFixtures,
       currentGameweek: getCurrentGameweek(),
       rawBootstrapData: bootstrapData
     }}>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TeamFormation from '../components/TeamFormation';
+import { useFplData } from '../contexts/FplDataContext.jsx';
 
 // Types for league standings
 interface LeagueEntry {
@@ -20,6 +21,26 @@ interface UserLeague {
   [key: string]: any;
 }
 
+interface Event {
+  id: number;
+  is_current: boolean;
+  [key: string]: any;
+}
+
+interface Player {
+  id: number;
+  element_type: number;
+  web_name: string;
+  [key: string]: any;
+}
+
+interface Team {
+  code: number;
+  id: number;
+  name: string;
+  [key: string]: any;
+}
+
 const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
   const [leagues, setLeagues] = useState<UserLeague[]>([]);
   const [selectedLeague, setSelectedLeague] = useState<UserLeague | null>(null);
@@ -31,6 +52,18 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
   const [selectedEntry, setSelectedEntry] = useState<LeagueEntry | null>(null);
   const [entryPicks, setEntryPicks] = useState<any | null>(null);
   const [loadingPicks, setLoadingPicks] = useState(false);
+  const { events, players, teams, fixtures } = useFplData() as {
+    teams: Team[];
+    fixtures: any[];
+    events: Event[];
+    players: Player[];
+  };
+
+  // Fetch current gameweek on mount
+  useEffect(() => {
+      const currentEvent = events?.find((e: any) => e.is_current);
+      setCurrentEventId(currentEvent ? currentEvent.id : null);
+  }, []);
 
   // Fetch user's leagues on mount or when userId changes
   useEffect(() => {
@@ -190,15 +223,7 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
   // Helper: get the current gameweek/event from the league API (not from standings data)
   const [currentEventId, setCurrentEventId] = useState<number | null>(null);
 
-  // Fetch current gameweek on mount
-  useEffect(() => {
-    fetch('http://localhost:5000/api/bootstrap-static')
-      .then(res => res.json())
-      .then(data => {
-        const currentEvent = data.events?.find((e: any) => e.is_current);
-        setCurrentEventId(currentEvent ? currentEvent.id : null);
-      });
-  }, []);
+
 
   // Fetch picks for a selected entry (team) for the current gameweek
   const fetchEntryPicks = async (entry: LeagueEntry) => {
@@ -220,15 +245,6 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
     }
   };
 
-  const [allPlayers, setAllPlayers] = useState<any[]>([]);
-
-  // Fetch all players on mount
-  useEffect(() => {
-    fetch('http://localhost:5000/api/bootstrap-static')
-      .then(res => res.json())
-      .then(data => setAllPlayers(data.elements || []));
-  }, []);
-
   const [liveData, setLiveData] = useState<any[]>([]);
 
   // Fetch live data for the current gameweek (for player points in modal)
@@ -238,19 +254,8 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
       .then(res => res.json())
       .then(data => setLiveData(data.elements || []));
   }, [currentEventId]);
-  const [teams, setTeams] = useState<any[]>([]);
-  const [fixtures, setFixtures] = useState<any[]>([]);
 
-  // Fetch all teams and fixtures on mount
-  useEffect(() => {
-    Promise.all([
-      fetch('http://localhost:5000/api/bootstrap-static').then(res => res.json()),
-      fetch('http://localhost:5000/api/fixtures').then(res => res.json())
-    ]).then(([bootstrapData, fixturesData]) => {
-      setTeams(bootstrapData.teams || []);
-      setFixtures(fixturesData || []);
-    });
-  }, []);
+
 
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-8 mt-8">
@@ -379,11 +384,11 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
                   </div>
                 )}                <TeamFormation 
                   picks={entryPicks.picks} 
-                  players={allPlayers} 
+                  players={players} 
                   liveData={liveData} 
                   showPoints={true} 
                   teams={teams}
-                  fixtures={fixtures.filter(f => !f.finished)} // Only pass unfinished fixtures for live bonus
+                  fixtures={fixtures} // Only pass unfinished fixtures for live bonus
                 />
               </>
             ) : entryPicks && entryPicks.error ? (

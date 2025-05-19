@@ -1,39 +1,57 @@
 import React, { useEffect, useState } from 'react';
+import { useFplData } from '../contexts/FplDataContext.jsx';
+import { set } from '../../server/proxy/cache.cjs';
+
+interface Team {
+  id: number;
+  code: number;
+  name: string;
+  short_name: string;
+}
+interface Event {
+  id: number;
+  name: string;
+  is_current: boolean;
+  is_next: boolean;
+}
+interface Fixture {
+  id: number;
+  team_h: number;
+  team_a: number;
+  kickoff_time?: string;
+  team_h_difficulty: number;
+  team_a_difficulty: number;
+  event: number;
+}
+interface Player {
+  id: number;
+  web_name: string;
+  total_points: number;
+  element_type: number;
+  team: number;
+}
 
 const TeamSelector: React.FunctionComponent = () => {
-  const [teams, setTeams] = useState<any[]>([]);
   const [fixtures, setFixtures] = useState<any[]>([]);
-  const [players, setPlayers] = useState<any[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nextGameweek, setNextGameweek] = useState<number | null>(null);
+  const { teams, players, events, allFixtures } = useFplData() as {
+    teams: Team[];
+    players: Player[];
+    allFixtures: Fixture[];
+    events: Event[];
+    };
 
   useEffect(() => {
-    const fetchData = async () => {
       setLoading(true);
-      try {
-        const [bootstrapRes, fixturesRes] = await Promise.all([
-          fetch('http://localhost:5000/api/bootstrap-static'),
-          fetch('http://localhost:5000/api/fixtures'),
-        ]);
-        const bootstrapData = await bootstrapRes.json();
-        const fixturesData = await fixturesRes.json();
-        setTeams(bootstrapData.teams);
-        setPlayers(bootstrapData.elements);
-        setEvents(bootstrapData.events);
-        setFixtures(fixturesData);
-        // Find next gameweek
-        const nextEvent = bootstrapData.events.find((e: any) => e.is_next);
-        setNextGameweek(nextEvent ? nextEvent.id : null);
-      } catch (err) {
-        setError('Failed to load data.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+      if(!allFixtures) return;
+      setFixtures(allFixtures);
+      // Find next gameweek
+      const nextEvent = events.find((e: any) => e.is_next);
+      setNextGameweek(nextEvent ? nextEvent.id : null);
+      setLoading(false);
+  }, [allFixtures]);
 
   // Get fixtures for the next gameweek
   const nextGWFixtures = fixtures.filter((f: any) => f.event === nextGameweek);

@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useFplData } from '../contexts/FplDataContext.jsx';
 
 type Team = {
   id: number;
@@ -13,49 +14,23 @@ type Fixture = {
   team_a: number;
   kickoff_time?: string;
 };
-type Player = { id: number; team: number; element_type: number; web_name: string; total_points: number };
 
-const FixturesPage = ({ setSelectedPlayer, setFixtureModal }: { setSelectedPlayer: (p: any) => void, setFixtureModal: (f: any) => void }) => {
+const FixturesPage = ({ setFixtureModal }: { setFixtureModal: (f: any) => void }) => {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
   const [selectedGameweek, setSelectedGameweek] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFixture, setSelectedFixture] = useState<Fixture | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [allFixtures, setAllFixtures] = useState<Fixture[]>([]);
+  const { teams, events, allFixtures } = useFplData() as {
+    teams: Team[];
+    events: Event[];
+    allFixtures: Fixture[];
+    };
 
-  // Fetch bootstrap-static (teams, events, players)
   useEffect(() => {
-    const fetchBootstrap = async () => {
-      try {
-        const bootstrapRes = await fetch('http://localhost:5000/api/bootstrap-static');
-        const bootstrapData = await bootstrapRes.json();
-        setTeams(bootstrapData.teams);
-        setEvents(bootstrapData.events);
-        setPlayers(bootstrapData.elements);
-        const currentEvent = bootstrapData.events.find((e: Event) => e.is_current);
+        const currentEvent = events.find((e: Event) => e.is_current);
         setSelectedGameweek(currentEvent ? currentEvent.id : 1);
-      } catch (err) {
-        setError('Failed to load teams and gameweeks.');
-      }
-    };
-    fetchBootstrap();
-  }, []);
-
-  // Fetch all fixtures
-  useEffect(() => {
-    const fetchAllFixtures = async () => {
-      try {
-        const res = await fetch('http://localhost:5000/api/fixtures');
-        const data = await res.json();
-        setAllFixtures(data);
-      } catch (err) {
-        // Optionally handle error
-      }
-    };
-    fetchAllFixtures();
+        setFixtures(allFixtures);
   }, []);
 
   // Fetch fixtures for selected gameweek
@@ -83,10 +58,6 @@ const FixturesPage = ({ setSelectedPlayer, setFixtureModal }: { setSelectedPlaye
     const team = getTeam(id);
     return team ? `https://resources.premierleague.com/premierleague/badges/t${team.code}.png` : '';
   }, [getTeam]);
-  const getPlayersForFixture = useCallback((fixture: Fixture) => {
-    if (!fixture) return [];
-    return players.filter((p) => p.team === fixture.team_h || p.team === fixture.team_a);
-  }, [players]);
   const getTeamLastResults = useCallback((teamId: number, allFixtures: Fixture[], currentFixtureId: number, n = 3) => {
     const played = allFixtures
       .filter(

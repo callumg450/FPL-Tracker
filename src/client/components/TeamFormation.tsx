@@ -17,10 +17,11 @@ interface Pick {
   element: number;
   position: number;
   multiplier: number;
+  is_captain: boolean;
+  is_vice_captain: boolean;
   [key: string]: any;
 }
 interface Team {
-  code: number;
   id: number;
   name: string;
   [key: string]: any;

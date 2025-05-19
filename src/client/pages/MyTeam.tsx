@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import TeamFormation from '../components/TeamFormation';
 import TransferSuggestions from '../components/TransferSuggestions';
+import { useFplData } from '../contexts/FplDataContext.jsx';
 
 const POSITION_MAP: Record<number, string> = {
   1: 'Goalkeeper',
@@ -24,9 +25,13 @@ interface Pick {
   element: number;
   position: number;
   multiplier: number;
+  is_captain: boolean;
+  is_vice_captain: boolean;
   [key: string]: any;
 }
 interface Team {
+  id: number;
+  name: string;
   picks: Pick[];
   [key: string]: any;
 }
@@ -39,33 +44,33 @@ interface EntryHistory {
   current: Array<{ event: number; overall_rank: number } & Record<string, any>>;
   [key: string]: any;
 }
+interface Event {
+  id: number;
+  name: string;
+  is_current?: boolean;
+  [key: string]: any;
+}
 
 const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
   const [inputUserId, setInputUserId] = useState(userId || '');
   const [submittedUserId, setSubmittedUserId] = useState(userId || '');
   const [team, setTeam] = useState<Team | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [liveData, setLiveData] = useState<LiveData[]>([]);
-  const [currentEventId, setCurrentEventId] = useState(null);
-  const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [entryHistory, setEntryHistory] = useState<EntryHistory | null>(null);
-  const [teams, setTeams] = useState<any[]>([]);
   const [fixtures, setFixtures] = useState([]);
+  const { teams, players, events } = useFplData() as {
+    teams: Team[];
+    players: Player[];
+    events: Event[];
+    };
 
   // Fetch all players and events on mount
   useEffect(() => {
-    fetch('http://localhost:5000/api/bootstrap-static')
-      .then(res => res.json())
-      .then(data => {
-        setPlayers(data.elements || []);
-        setEvents(data.events || []);
-        const currentEvent = data.events.find((e: any) => e.is_current);
-        setCurrentEventId(currentEvent ? currentEvent.id : null);
-        setSelectedEventId(currentEvent ? currentEvent.id : null);
-      });
+      const currentEvent = events.find((e: any) => e.is_current);
+      setSelectedEventId(currentEvent ? currentEvent.id : null);
   }, []);
 
   // Always fetch live data for the selected gameweek
@@ -102,13 +107,6 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
       .then(res => res.json())
       .then(data => setEntryHistory(data));
   }, [submittedUserId]);
-
-  // Fetch all teams on mount
-  useEffect(() => {
-    fetch('http://localhost:5000/api/bootstrap-static')
-      .then(res => res.json())
-      .then(data => setTeams(data.teams || []));
-  }, []);
 
   // Fetch fixtures for selected gameweek
   useEffect(() => {
