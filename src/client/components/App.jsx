@@ -42,18 +42,10 @@ function App() {
           </nav>          
           <div className="max-w-6xl mx-auto">
             <Routes>
-              <Route
-                path="/"
-                element={
-                  <FixturesPage
-                    setSelectedPlayer={setSelectedPlayer}
-                    setFixtureModal={setFixtureModal}
-                  />
-                }
-              />              <Route path="/team-selector" element={<TeamSelector />} />
+              <Route path="/" element={<FixturesPage setSelectedPlayer={setSelectedPlayer} setFixtureModal={setFixtureModal}/>}/>              
+              <Route path="/team-selector" element={<TeamSelector />} />
               <Route path="/my-team" element={<MyTeam userId={userId} />} />
               <Route path="/leagues" element={<Leagues userId={userId} />} />
-              <Route path="/bonus-points" element={<BonusPoints />} />
               <Route path="/bonus-points" element={<BonusPoints />} />
             </Routes>
           </div>

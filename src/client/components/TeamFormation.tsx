@@ -41,6 +41,13 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
 
   // Map pick.element to player object
   const getPlayer = (elementId: number) => players.find(p => p.id === elementId);
+  // Helper to determine if player is captain or vice-captain
+  const getCaptainStatus = (pick: Pick): { isCaptain: boolean; isViceCaptain: boolean } => {
+    return {
+      isCaptain: pick.is_captain,
+      isViceCaptain: pick.is_vice_captain
+    };
+  };
 
   // Group picks by position for formation, and separate bench
   const formation: Record<string, any[]> = {
@@ -159,12 +166,26 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
         {formation.Goalkeeper.map(player => {
           const pts = showPoints ? getPointsAndBonus(player.id) : null;
           const faceUrl = getPlayerFaceUrl(player);
+          console.log(player.pick)
+          const { isCaptain, isViceCaptain } = getCaptainStatus(player.pick);
           return (
-            <div key={player.id} className="bg-blue-100 rounded px-4 py-2 mx-1 font-bold text-blue-900 shadow flex flex-col items-center" onClick={() => handlePlayerClick(player)}>
+            <div key={player.id} className="bg-blue-100 rounded px-4 py-2 mx-1 font-bold text-blue-900 shadow flex flex-col items-center relative" onClick={() => handlePlayerClick(player)}>
+              {isCaptain && (
+                <div className="absolute -top-2 -right-2 bg-yellow-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+                  C
+                </div>
+              )}
+              {isViceCaptain && (
+                <div className="absolute -top-2 -right-2 bg-gray-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+                  VC
+                </div>
+              )}
               {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-10 h-12 rounded mb-1" />}
               {player.web_name} <span className="text-xs text-gray-500">(GK)</span>
               {pts && (
-                <span className="text-xs text-blue-800 font-normal">{pts.points} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}</span>
+                <span className="text-xs text-blue-800 font-normal">
+                  {pts.points * player.pick.multiplier} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}
+                </span>
               )}
             </div>
           );
@@ -175,12 +196,25 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
         {formation.Defender.map(player => {
           const pts = showPoints ? getPointsAndBonus(player.id) : null;
           const faceUrl = getPlayerFaceUrl(player);
+          const { isCaptain, isViceCaptain } = getCaptainStatus(player.pick);
           return (
-            <div key={player.id} className="bg-green-100 rounded px-3 py-2 font-bold text-green-900 shadow flex flex-col items-center" onClick={() => handlePlayerClick(player)}>
+            <div key={player.id} className="bg-green-100 rounded px-3 py-2 font-bold text-green-900 shadow flex flex-col items-center relative" onClick={() => handlePlayerClick(player)}>
+              {isCaptain && (
+                <div className="absolute -top-2 -right-2 bg-yellow-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+                  C
+                </div>
+              )}
+              {isViceCaptain && (
+                <div className="absolute -top-2 -right-2 bg-gray-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+                  VC
+                </div>
+              )}
               {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-10 h-12 rounded mb-1" />}
               {player.web_name} <span className="text-xs text-gray-500">(DEF)</span>
               {pts && (
-                <span className="text-xs text-green-800 font-normal">{pts.points} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}</span>
+                <span className="text-xs text-green-800 font-normal">
+                  {pts.points * player.pick.multiplier} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}
+                </span>
               )}
             </div>
           );
@@ -191,12 +225,25 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
         {formation.Midfielder.map(player => {
           const pts = showPoints ? getPointsAndBonus(player.id) : null;
           const faceUrl = getPlayerFaceUrl(player);
+          const { isCaptain, isViceCaptain } = getCaptainStatus(player.pick);
           return (
-            <div key={player.id} className="bg-yellow-100 rounded px-3 py-2 font-bold text-yellow-900 shadow flex flex-col items-center" onClick={() => handlePlayerClick(player)}>
+            <div key={player.id} className="bg-yellow-100 rounded px-3 py-2 font-bold text-yellow-900 shadow flex flex-col items-center relative" onClick={() => handlePlayerClick(player)}>
+              {isCaptain && (
+                <div className="absolute -top-2 -right-2 bg-yellow-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+                  C
+                </div>
+              )}
+              {isViceCaptain && (
+                <div className="absolute -top-2 -right-2 bg-gray-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+                  VC
+                </div>
+              )}
               {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-10 h-12 rounded mb-1" />}
               {player.web_name} <span className="text-xs text-gray-500">(MID)</span>
               {pts && (
-                <span className="text-xs text-yellow-800 font-normal">{pts.points} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}</span>
+                <span className="text-xs text-yellow-800 font-normal">
+                  {pts.points * player.pick.multiplier} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}
+                </span>
               )}
             </div>
           );
@@ -207,18 +254,30 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
         {formation.Forward.map(player => {
           const pts = showPoints ? getPointsAndBonus(player.id) : null;
           const faceUrl = getPlayerFaceUrl(player);
+          const { isCaptain, isViceCaptain } = getCaptainStatus(player.pick);
           return (
-            <div key={player.id} className="bg-red-100 rounded px-3 py-2 font-bold text-red-900 shadow flex flex-col items-center" onClick={() => handlePlayerClick(player)}>
+            <div key={player.id} className="bg-red-100 rounded px-3 py-2 font-bold text-red-900 shadow flex flex-col items-center relative" onClick={() => handlePlayerClick(player)}>
+              {isCaptain && (
+                <div className="absolute -top-2 -right-2 bg-yellow-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+                  C
+                </div>
+              )}
+              {isViceCaptain && (
+                <div className="absolute -top-2 -right-2 bg-gray-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+                  VC
+                </div>
+              )}
               {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-10 h-12 rounded mb-1" />}
               {player.web_name} <span className="text-xs text-gray-500">(FWD)</span>
               {pts && (
-                <span className="text-xs text-red-800 font-normal">{pts.points} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}</span>
+                <span className="text-xs text-red-800 font-normal">
+                  {pts.points * player.pick.multiplier} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}
+                </span>
               )}
             </div>
           );
         })}
-      </div>
-      {/* Bench Section */}
+      </div>      {/* Bench Section */}
       {bench.length > 0 && (
         <div className="mt-8">
           <h3 className="text-lg font-bold text-center text-gray-700 mb-2">Bench</h3>
@@ -226,13 +285,25 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
             {bench.map(player => {
               const pts = showPoints ? getPointsAndBonus(player.id) : null;
               const faceUrl = getPlayerFaceUrl(player);
+              const { isCaptain, isViceCaptain } = getCaptainStatus(player.pick);
               return (
-                <div key={player.id} className="bg-gray-200 rounded px-3 py-2 font-bold text-gray-700 shadow flex flex-col items-center">
+                <div key={player.id} className="bg-gray-200 rounded px-3 py-2 font-bold text-gray-700 shadow flex flex-col items-center relative" onClick={() => handlePlayerClick(player)}>
+                  {isCaptain && (
+                    <div className="absolute -top-2 -right-2 bg-yellow-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+                      C
+                    </div>
+                  )}
+                  {isViceCaptain && (
+                    <div className="absolute -top-2 -right-2 bg-gray-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+                      VC
+                    </div>
+                  )}
                   {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-10 h-12 rounded mb-1" />}
-                  <span>{player.web_name}</span>
-                  <span className="text-xs text-gray-500">{POSITION_MAP[player.element_type]}</span>
+                  {player.web_name}
                   {pts && (
-                    <span className="text-xs text-gray-800 font-normal">{pts.points} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}</span>
+                    <span className="text-xs text-gray-600 font-normal">
+                      {pts.points} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}
+                    </span>
                   )}
                 </div>
               );
