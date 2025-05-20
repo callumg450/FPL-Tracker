@@ -48,22 +48,31 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
   const [leagueName, setLeagueName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loadingLeagues, setLoadingLeagues] = useState(false);
-  const [selectedEntry, setSelectedEntry] = useState<LeagueEntry | null>(null);
+  const [loadingLeagues, setLoadingLeagues] = useState(false);  const [selectedEntry, setSelectedEntry] = useState<LeagueEntry | null>(null);
   const [entryPicks, setEntryPicks] = useState<any | null>(null);
   const [loadingPicks, setLoadingPicks] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
   const { events, players, teams, fixtures } = useFplData() as {
     teams: Team[];
     fixtures: any[];
     events: Event[];
     players: Player[];
   };
-
-  // Fetch current gameweek on mount
+  // Fetch current gameweek when events are available
   useEffect(() => {
-      const currentEvent = events?.find((e: any) => e.is_current);
-      setCurrentEventId(currentEvent ? currentEvent.id : null);
-  }, []);
+      if (!events || !events.length) return;
+      const currentEvent = events.find((e: any) => e.is_current);
+      if (currentEvent) {
+          setCurrentEventId(currentEvent.id);
+          console.log('Current gameweek set to:', currentEvent.id);
+      } else {
+          // Fallback to first event if no current event found
+          if (events.length > 0) {
+              setCurrentEventId(events[0].id);
+              console.log('No current gameweek found, using first event:', events[0].id);
+          }
+      }
+  }, [events]);
 
   // Fetch user's leagues on mount or when userId changes
   useEffect(() => {
@@ -162,23 +171,42 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch league standings');
       const data = await res.json();
-      
-      // Get live data and picks for all teams
-      if (currentEventId && data.standings?.results) {
-        const liveRes = await fetch(`http://localhost:5000/api/event/${currentEventId}/live/`);
+        // Get live data and picks for all teams
+      if (data.standings?.results) {
+        // If currentEventId is not available, try to determine it from the API response
+        let eventId = currentEventId;
+        if (!eventId && data.league && data.league.current_event) {
+          eventId = data.league.current_event;
+          setCurrentEventId(eventId);
+          console.log('Setting currentEventId from league data:', eventId);
+        } else if (!eventId && events && events.length) {
+          // Last resort: use the first event or find a current one
+          const currentEvent = events.find(e => e.is_current);
+          eventId = currentEvent ? currentEvent.id : events[0].id;
+          setCurrentEventId(eventId);
+          console.log('Setting currentEventId from events context:', eventId);
+        }
+        
+        if (!eventId) {
+          console.error('Could not determine current event ID');
+          throw new Error('Current gameweek could not be determined');
+        }
+
+        const liveRes = await fetch(`http://localhost:5000/api/event/${eventId}/live/`);
         if (!liveRes.ok) throw new Error('Failed to fetch live data');
         const liveData = await liveRes.json();
 
         // Fetch each team's picks and calculate live points
         const teamsWithLivePoints = await Promise.all(
           data.standings.results.map(async (entry: any) => {
-            try {
-              const picksRes = await fetch(`http://localhost:5000/api/user-team/${entry.entry}/${currentEventId}`);
+            try {              // Use eventId instead of currentEventId since we've already validated it above
+              const picksRes = await fetch(`http://localhost:5000/api/user-team/${entry.entry}/${eventId}`);
               if (!picksRes.ok) return entry;
-              const picksData = await picksRes.json();
-                const livePoints = calculateLivePoints(picksData.picks, liveData.elements);
+              const picksData = await picksRes.json();const livePoints = calculateLivePoints(picksData.picks, liveData.elements);
+              // Store transfer cost explicitly
+              const transfersCost = picksData.entry_history?.event_transfers_cost || 0;
               // Add transfer cost
-              const eventTotal = livePoints - (picksData.entry_history?.event_transfers_cost || 0);
+              const eventTotal = livePoints - transfersCost;
               
               // Calculate total points by replacing the old gameweek score with the new live score
               const totalPoints = entry.total - entry.event_total + eventTotal;
@@ -186,7 +214,8 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
               return {
                 ...entry,
                 event_total: eventTotal, // Override event_total with live points
-                total: totalPoints // Update total points with live score
+                total: totalPoints, // Update total points with live score
+                event_transfers_cost: transfersCost // Store transfer cost explicitly for the Hits column
               };
             } catch (err) {
               console.error(`Failed to fetch picks for entry ${entry.entry}:`, err);
@@ -214,16 +243,26 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
       setLoading(false);
     }
   };
-
   // When a league is selected, fetch its standings
   useEffect(() => {
     if (selectedLeague) fetchStandings(selectedLeague);
   }, [selectedLeague]);
+  
+  // Auto-refresh player data when modal is open
+  useEffect(() => {
+    if (!selectedEntry || !entryPicks) return;
+    
+    // Set up interval to refresh the selected team's data every 30 seconds
+    const refreshTeamInterval = setInterval(() => {
+      console.log('Auto-refreshing team data');
+      fetchEntryPicks(selectedEntry);
+    }, 30000);
+    
+    return () => clearInterval(refreshTeamInterval);
+  }, [selectedEntry]);
 
   // Helper: get the current gameweek/event from the league API (not from standings data)
   const [currentEventId, setCurrentEventId] = useState<number | null>(null);
-
-
 
   // Fetch picks for a selected entry (team) for the current gameweek
   const fetchEntryPicks = async (entry: LeagueEntry) => {
@@ -232,12 +271,36 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
     setEntryPicks(null);
     setSelectedEntry(entry);
     try {
-      // Always use the current gameweek for team picks
-      if (!currentEventId) throw new Error('Current gameweek not found');
-      const res = await fetch(`http://localhost:5000/api/user-team/${entry.entry}/${currentEventId}`);
+      // Try to determine the current gameweek if not already set
+      let eventId = currentEventId;
+      if (!eventId && events && events.length) {
+        const currentEvent = events.find(e => e.is_current);
+        eventId = currentEvent ? currentEvent.id : events[0].id;
+        setCurrentEventId(eventId);
+        console.log('Setting currentEventId in fetchEntryPicks:', eventId);
+      }
+      
+      if (!eventId) {
+        // As a last resort, try to get the event ID from the entry's own data
+        if (entry.event) {
+          eventId = entry.event;
+          setCurrentEventId(eventId);
+        } else {
+          throw new Error('Current gameweek not found');
+        }
+      }
+      
+      // Fetch fresh live data first to ensure we have the latest player stats
+      const liveRes = await fetch(`http://localhost:5000/api/event/${eventId}/live/`);
+      if (!liveRes.ok) throw new Error('Failed to fetch live data');
+      const liveDataResponse = await liveRes.json();
+      setLiveData(liveDataResponse.elements || []);
+      
+      // Now fetch the team's picks
+      const res = await fetch(`http://localhost:5000/api/user-team/${entry.entry}/${eventId}`);
       if (!res.ok) throw new Error('Failed to fetch team picks');
-      const data = await res.json();
-      setEntryPicks(data);
+      const data = await res.json();      setEntryPicks(data);
+      setLastRefreshTime(new Date());
     } catch (err) {
       setEntryPicks({ error: err.message || 'Fetch failed' });
     } finally {
@@ -245,15 +308,37 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
     }
   };
 
-  const [liveData, setLiveData] = useState<any[]>([]);
-
-  // Fetch live data for the current gameweek (for player points in modal)
+  const [liveData, setLiveData] = useState<any[]>([]);  // Fetch live data for the current gameweek (for player points in modal)
   useEffect(() => {
-    if (!currentEventId) return;
-    fetch(`http://localhost:5000/api/event/${currentEventId}/live/`)
-      .then(res => res.json())
-      .then(data => setLiveData(data.elements || []));
-  }, [currentEventId]);
+    if (!currentEventId) {
+      // If currentEventId is not set but events are available, try to set it
+      if (events && events.length) {
+        const currentEvent = events.find(e => e.is_current);
+        if (currentEvent) {
+          setCurrentEventId(currentEvent.id);
+          console.log('Setting currentEventId from live data effect:', currentEvent.id);
+        }
+      }
+      return;
+    }
+    
+    console.log('Fetching live data for event:', currentEventId);
+    const fetchLiveData = () => {
+      fetch(`http://localhost:5000/api/event/${currentEventId}/live/`)
+        .then(res => res.json())
+        .then(data => setLiveData(data.elements || []))
+        .catch(err => console.error('Failed to fetch live data:', err));
+    };
+
+    // Initial fetch
+    fetchLiveData();
+    
+    // Set up interval to refresh live data every 60 seconds
+    const refreshInterval = setInterval(fetchLiveData, 60000);
+    
+    // Clean up interval on unmount or when dependencies change
+    return () => clearInterval(refreshInterval);
+  }, [currentEventId, events]);
 
 
 
@@ -314,13 +399,15 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {standings.map(entry => (
+                      {standings.map(entry => (                        
                         <tr key={entry.id} className="text-center hover:bg-indigo-50 cursor-pointer" onClick={() => fetchEntryPicks(entry)}>
                           <td className="border px-2 py-1 font-bold">{entry.rank}</td>
                           <td className="border px-2 py-1">{entry.entry_name}</td>
                           <td className="border px-2 py-1">{entry.player_name}</td>
                           <td className="border px-2 py-1">{entry.event_total}</td>
-                          <td className="border px-2 py-1">{typeof entry.event_transfers_cost === 'number' ? -entry.event_transfers_cost : 0}</td>
+                          <td className={`border px-2 py-1 ${entry.event_transfers_cost > 0 ? 'text-red-600 font-bold' : ''}`}>
+                            {entry.event_transfers_cost > 0 ? `-${entry.event_transfers_cost}` : '0'}
+                          </td>
                           <td className="border px-2 py-1">{entry.total}</td>
                           <td className="border px-2 py-1">
                             {entry.last_rank && entry.rank
@@ -370,7 +457,24 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
             >
               &times;
             </button>
-            <h3 className="text-lg font-bold mb-2 text-indigo-800 text-center pr-8">{selectedEntry.entry_name} ({selectedEntry.player_name})</h3>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-bold text-indigo-800">{selectedEntry.entry_name} ({selectedEntry.player_name})</h3>              <div className="flex items-center">
+                <button 
+                  className="text-xs text-indigo-600 hover:text-indigo-800 px-2 py-1 hover:bg-indigo-50 rounded mr-1 disabled:opacity-50"
+                  onClick={() => {
+                    if (selectedEntry) fetchEntryPicks(selectedEntry);
+                  }}
+                  disabled={loadingPicks}
+                >
+                  {loadingPicks ? 'Updating...' : 'Refresh'}
+                </button>
+                {lastRefreshTime && (
+                  <span className="text-xs text-gray-500">
+                    Updated: {lastRefreshTime.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+            </div>
             {loadingPicks ? (
               <div className="text-center text-gray-500">Loading team...</div>
             ) : entryPicks && entryPicks.picks && entryPicks.picks.length > 0 ? (
