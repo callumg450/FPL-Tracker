@@ -62,7 +62,7 @@ export const FplDataProvider = ({ children }) => {
       players: enrichedPlayers,
       events: bootstrapData?.events || [],
       fixtures, //Upcoming fixtures,
-      allFixtures: allFixtures,
+      allFixtures,
       currentGameweek: getCurrentGameweek(),
       rawBootstrapData: bootstrapData
     }}>
