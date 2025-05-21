@@ -2,19 +2,15 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import TeamSelector from '../pages/TeamSelector.tsx';
 import '../index.css';
-import FixturesPage from '../pages/FixturesPage.tsx';
-import PlayerDetailModal from './PlayerDetailModal.tsx';
-import FixturePlayersModal from './FixturePlayersModal.tsx';
+import FixturesPage from '../pages/Fixtures.tsx';
 import MyTeam from '../pages/MyTeam.tsx';
-import Leagues from '../pages/Leagues.tsx';
+import Leagues from '../pages/leagues/Leagues.tsx';
 import BonusPoints from '../pages/BonusPoints.tsx';
 import { FplDataProvider } from '../contexts/FplDataContext.jsx';
 
 function App() {
   // Only keep userId and modal state in App
   const [userId, setUserId] = useState(() => sessionStorage.getItem('userId') || '');
-  const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [fixtureModal, setFixtureModal] = useState({ open: false, fixture: null });
 
   // Persist userId
   React.useEffect(() => {
@@ -42,26 +38,13 @@ function App() {
           </nav>          
           <div className="max-w-6xl mx-auto">
             <Routes>
-              <Route path="/" element={<FixturesPage setSelectedPlayer={setSelectedPlayer} setFixtureModal={setFixtureModal}/>}/>              
+              <Route path="/" element={<FixturesPage />} />              
               <Route path="/team-selector" element={<TeamSelector />} />
               <Route path="/my-team" element={<MyTeam userId={userId} />} />
-              <Route path="/leagues" element={<Leagues userId={userId} />} />
+              <Route path="/leagues/*" element={<Leagues userId={userId} />} />
               <Route path="/bonus-points" element={<BonusPoints />} />
             </Routes>
           </div>
-          {/* Fixture modal and player modal are controlled by App, but data/logic is in children */}
-          <FixturePlayersModal
-            open={fixtureModal.open}
-            fixture={fixtureModal.fixture}
-            setOpen={(open) => setFixtureModal(f => ({ ...f, open }))}
-            setSelectedPlayer={setSelectedPlayer}
-          />
-          {selectedPlayer && (
-            <PlayerDetailModal
-              player={selectedPlayer}
-              onClose={() => setSelectedPlayer(null)}
-            />
-          )}
         </div>
       </Router>
     </FplDataProvider>

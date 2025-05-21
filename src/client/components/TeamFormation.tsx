@@ -1,4 +1,5 @@
 import React from 'react';
+import PlayerCard from './PlayerCard';
 
 const POSITION_MAP: Record<number, string> = {
   1: 'Goalkeeper',
@@ -36,11 +37,7 @@ interface TeamFormationProps {
 }
 
 const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData = [], showPoints = false, teams = [], fixtures = [] }) => {
-  // Add state for selected player and fixture info
-  const [selectedPlayer, setSelectedPlayer] = React.useState<Player | null>(null);
-  const [fixtureInfo, setFixtureInfo] = React.useState<any | null>(null);
-
-  // Map pick.element to player object
+  // Helper to map pick.element to player object
   const getPlayer = (elementId: number) => players.find(p => p.id === elementId);
   // Helper to determine if player is captain or vice-captain
   const getCaptainStatus = (pick: Pick): { isCaptain: boolean; isViceCaptain: boolean } => {
@@ -128,12 +125,86 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
         
         return {
           points: live.stats.total_points,
-          bonus: bonus
+          bonus: bonus,
+          stats: live.stats // Pass stats for breakdown
         };
       }
       return null;
     }
     return null;
+  };
+
+  // Helper to generate a breakdown of points for tooltip
+  const getPointsBreakdown = (stats: any, elementType?: number) => {
+    if (!stats) return [];
+    const breakdown: string[] = [];
+
+    // FPL points rules (simplified, not all edge cases)
+    // See: https://fantasy.premierleague.com/help/rules
+    // elementType: 1 = GK, 2 = DEF, 3 = MID, 4 = FWD
+    const pos = elementType;
+    // Minutes played
+    if (typeof stats.minutes === 'number') {
+      let minPts = 0;
+      if (stats.minutes >= 60) minPts = 2;
+      else if (stats.minutes > 0) minPts = 1;
+      breakdown.push(`${stats.minutes} minutes played: ${minPts} pts`);
+    }
+    // Goals scored
+    if (typeof stats.goals_scored === 'number' && stats.goals_scored > 0) {
+      let goalPts = 0;
+      if (pos === 1) goalPts = 6;
+      else if (pos === 2) goalPts = 6;
+      else if (pos === 3) goalPts = 5;
+      else if (pos === 4) goalPts = 4;
+      breakdown.push(`${stats.goals_scored} goal(s): +${stats.goals_scored * goalPts} pts`);
+    }
+    // Assists
+    if (typeof stats.assists === 'number' && stats.assists > 0) {
+      breakdown.push(`${stats.assists} assist(s): +${stats.assists * 3} pts`);
+    }
+    // Clean sheet
+    if (typeof stats.clean_sheets === 'number' && stats.clean_sheets > 0) {
+      if (pos === 1 || pos === 2) breakdown.push(`Clean sheet: +4 pts`);
+      else if (pos === 3) breakdown.push(`Clean sheet: +1 pt`);
+    }
+    // Goals conceded (DEF/GK lose 1 pt for every 2 goals conceded)
+    if ((pos === 1 || pos === 2) && typeof stats.goals_conceded === 'number' && stats.goals_conceded > 1) {
+      const lost = Math.floor(stats.goals_conceded / 2);
+      if (lost > 0) breakdown.push(`${stats.goals_conceded} goals conceded: -${lost} pts`);
+    }
+    // Own goals
+    if (typeof stats.own_goals === 'number' && stats.own_goals > 0) {
+      breakdown.push(`${stats.own_goals} own goal(s): -${stats.own_goals * 2} pts`);
+    }
+    // Penalties saved
+    if (typeof stats.penalties_saved === 'number' && stats.penalties_saved > 0) {
+      breakdown.push(`${stats.penalties_saved} penalty saved: +${stats.penalties_saved * 5} pts`);
+    }
+    // Penalties missed
+    if (typeof stats.penalties_missed === 'number' && stats.penalties_missed > 0) {
+      breakdown.push(`${stats.penalties_missed} penalty missed: -${stats.penalties_missed * 2} pts`);
+    }
+    // Yellow cards
+    if (typeof stats.yellow_cards === 'number' && stats.yellow_cards > 0) {
+      breakdown.push(`${stats.yellow_cards} yellow card(s): -${stats.yellow_cards * 1} pts`);
+    }
+    // Red cards
+    if (typeof stats.red_cards === 'number' && stats.red_cards > 0) {
+      breakdown.push(`${stats.red_cards} red card(s): -${stats.red_cards * 3} pts`);
+    }
+    // Saves (GK only)
+    if (pos === 1 && typeof stats.saves === 'number' && stats.saves > 0) {
+      const savePts = Math.floor(stats.saves / 3);
+      if (savePts > 0) breakdown.push(`${stats.saves} saves: +${savePts} pts`);
+    }
+    // Bonus
+    if (typeof stats.bonus === 'number' && stats.bonus > 0) {
+      breakdown.push(`Bonus: +${stats.bonus} pts`);
+    }
+    // Total
+    if (typeof stats.total_points === 'number') breakdown.push(`Total: ${stats.total_points} pts`);
+    return breakdown;
   };
 
   // Helper to get player face image URL
@@ -144,181 +215,120 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
     return `https://resources.premierleague.com/premierleague/photos/players/110x140/p${code}.png`;
   };
 
-  // Helper to get fixture info for a player in the current gameweek
-  const getFixtureForPlayer = (player: Player) => {
-    if (!teams || !teams.length || !player || !player.team || !fixtures.length) return null;
-    return fixtures.find((f: any) => f.team_h === player.team || f.team_a === player.team);
-  };
-
-  // Handler for player click
-  const handlePlayerClick = (player: Player) => {
-    setSelectedPlayer(player);
-    const fixture = getFixtureForPlayer(player);
-    setFixtureInfo(fixture);
-    if (fixture) {
-      console.log('Fixture info for', player.web_name, fixture);
-    }
-  };
+  const [activeTooltipId, setActiveTooltipId] = React.useState<number | null>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setActiveTooltipId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-4" ref={containerRef}>
       {/* Goalkeeper */}
       <div className="flex justify-center mb-2">
-        {formation.Goalkeeper.map(player => {
-          const pts = showPoints ? getPointsAndBonus(player.id) : null;
-          const faceUrl = getPlayerFaceUrl(player);
-          console.log(player.pick)
-          const { isCaptain, isViceCaptain } = getCaptainStatus(player.pick);
-          return (
-            <div key={player.id} className="bg-blue-100 rounded px-4 py-2 mx-1 font-bold text-blue-900 shadow flex flex-col items-center relative" onClick={() => handlePlayerClick(player)}>
-              {isCaptain && (
-                <div className="absolute -top-2 -right-2 bg-yellow-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
-                  C
-                </div>
-              )}
-              {isViceCaptain && (
-                <div className="absolute -top-2 -right-2 bg-gray-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
-                  VC
-                </div>
-              )}
-              {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-10 h-12 rounded mb-1" />}
-              {player.web_name} <span className="text-xs text-gray-500">(GK)</span>
-              {pts && (
-                <span className="text-xs text-blue-800 font-normal">
-                  {pts.points * player.pick.multiplier} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}
-                </span>
-              )}
-            </div>
-          );
-        })}
+        {formation.Goalkeeper.map(player => (
+          <PlayerCard
+            key={player.id}
+            player={player}
+            positionLabel="GK"
+            colorClass="bg-blue-100 text-blue-900"
+            pointsColorClass="text-blue-800"
+            showPoints={showPoints}
+            getPointsAndBonus={getPointsAndBonus}
+            getPlayerFaceUrl={getPlayerFaceUrl}
+            getCaptainStatus={getCaptainStatus}
+            getPointsBreakdown={getPointsBreakdown}
+            activeTooltipId={activeTooltipId}
+            setActiveTooltipId={setActiveTooltipId}
+          />
+        ))}
       </div>
       {/* Defenders */}
       <div className="flex justify-center mb-2 gap-2">
-        {formation.Defender.map(player => {
-          const pts = showPoints ? getPointsAndBonus(player.id) : null;
-          const faceUrl = getPlayerFaceUrl(player);
-          const { isCaptain, isViceCaptain } = getCaptainStatus(player.pick);
-          return (
-            <div key={player.id} className="bg-green-100 rounded px-3 py-2 font-bold text-green-900 shadow flex flex-col items-center relative" onClick={() => handlePlayerClick(player)}>
-              {isCaptain && (
-                <div className="absolute -top-2 -right-2 bg-yellow-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
-                  C
-                </div>
-              )}
-              {isViceCaptain && (
-                <div className="absolute -top-2 -right-2 bg-gray-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
-                  VC
-                </div>
-              )}
-              {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-10 h-12 rounded mb-1" />}
-              {player.web_name} <span className="text-xs text-gray-500">(DEF)</span>
-              {pts && (
-                <span className="text-xs text-green-800 font-normal">
-                  {pts.points * player.pick.multiplier} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}
-                </span>
-              )}
-            </div>
-          );
-        })}
+        {formation.Defender.map(player => (
+          <PlayerCard
+            key={player.id}
+            player={player}
+            positionLabel="DEF"
+            colorClass="bg-green-100 text-green-900"
+            pointsColorClass="text-green-800"
+            showPoints={showPoints}
+            getPointsAndBonus={getPointsAndBonus}
+            getPlayerFaceUrl={getPlayerFaceUrl}
+            getCaptainStatus={getCaptainStatus}
+            getPointsBreakdown={getPointsBreakdown}
+            activeTooltipId={activeTooltipId}
+            setActiveTooltipId={setActiveTooltipId}
+          />
+        ))}
       </div>
       {/* Midfielders */}
       <div className="flex justify-center mb-2 gap-2">
-        {formation.Midfielder.map(player => {
-          const pts = showPoints ? getPointsAndBonus(player.id) : null;
-          const faceUrl = getPlayerFaceUrl(player);
-          const { isCaptain, isViceCaptain } = getCaptainStatus(player.pick);
-          return (
-            <div key={player.id} className="bg-yellow-100 rounded px-3 py-2 font-bold text-yellow-900 shadow flex flex-col items-center relative" onClick={() => handlePlayerClick(player)}>
-              {isCaptain && (
-                <div className="absolute -top-2 -right-2 bg-yellow-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
-                  C
-                </div>
-              )}
-              {isViceCaptain && (
-                <div className="absolute -top-2 -right-2 bg-gray-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
-                  VC
-                </div>
-              )}
-              {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-10 h-12 rounded mb-1" />}
-              {player.web_name} <span className="text-xs text-gray-500">(MID)</span>
-              {pts && (
-                <span className="text-xs text-yellow-800 font-normal">
-                  {pts.points * player.pick.multiplier} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}
-                </span>
-              )}
-            </div>
-          );
-        })}
+        {formation.Midfielder.map(player => (
+          <PlayerCard
+            key={player.id}
+            player={player}
+            positionLabel="MID"
+            colorClass="bg-yellow-100 text-yellow-900"
+            pointsColorClass="text-yellow-800"
+            showPoints={showPoints}
+            getPointsAndBonus={getPointsAndBonus}
+            getPlayerFaceUrl={getPlayerFaceUrl}
+            getCaptainStatus={getCaptainStatus}
+            getPointsBreakdown={getPointsBreakdown}
+            activeTooltipId={activeTooltipId}
+            setActiveTooltipId={setActiveTooltipId}
+          />
+        ))}
       </div>
       {/* Forwards */}
       <div className="flex justify-center gap-2">
-        {formation.Forward.map(player => {
-          const pts = showPoints ? getPointsAndBonus(player.id) : null;
-          const faceUrl = getPlayerFaceUrl(player);
-          const { isCaptain, isViceCaptain } = getCaptainStatus(player.pick);
-          return (
-            <div key={player.id} className="bg-red-100 rounded px-3 py-2 font-bold text-red-900 shadow flex flex-col items-center relative" onClick={() => handlePlayerClick(player)}>
-              {isCaptain && (
-                <div className="absolute -top-2 -right-2 bg-yellow-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
-                  C
-                </div>
-              )}
-              {isViceCaptain && (
-                <div className="absolute -top-2 -right-2 bg-gray-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
-                  VC
-                </div>
-              )}
-              {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-10 h-12 rounded mb-1" />}
-              {player.web_name} <span className="text-xs text-gray-500">(FWD)</span>
-              {pts && (
-                <span className="text-xs text-red-800 font-normal">
-                  {pts.points * player.pick.multiplier} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>      {/* Bench Section */}
+        {formation.Forward.map(player => (
+          <PlayerCard
+            key={player.id}
+            player={player}
+            positionLabel="FWD"
+            colorClass="bg-red-100 text-red-900"
+            pointsColorClass="text-red-800"
+            showPoints={showPoints}
+            getPointsAndBonus={getPointsAndBonus}
+            getPlayerFaceUrl={getPlayerFaceUrl}
+            getCaptainStatus={getCaptainStatus}
+            getPointsBreakdown={getPointsBreakdown}
+            activeTooltipId={activeTooltipId}
+            setActiveTooltipId={setActiveTooltipId}
+          />
+        ))}
+      </div>
+      {/* Bench Section */}
       {bench.length > 0 && (
         <div className="mt-8">
           <h3 className="text-lg font-bold text-center text-gray-700 mb-2">Bench</h3>
           <div className="flex flex-row flex-wrap justify-center gap-2">
-            {bench.map(player => {
-              const pts = showPoints ? getPointsAndBonus(player.id) : null;
-              const faceUrl = getPlayerFaceUrl(player);
-              const { isCaptain, isViceCaptain } = getCaptainStatus(player.pick);
-              return (
-                <div key={player.id} className="bg-gray-200 rounded px-3 py-2 font-bold text-gray-700 shadow flex flex-col items-center relative" onClick={() => handlePlayerClick(player)}>
-                  {isCaptain && (
-                    <div className="absolute -top-2 -right-2 bg-yellow-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
-                      C
-                    </div>
-                  )}
-                  {isViceCaptain && (
-                    <div className="absolute -top-2 -right-2 bg-gray-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
-                      VC
-                    </div>
-                  )}
-                  {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-10 h-12 rounded mb-1" />}
-                  {player.web_name}
-                  {pts && (
-                    <span className="text-xs text-gray-600 font-normal">
-                      {pts.points} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-      {/* Fixture Info Modal */}
-      {selectedPlayer && fixtureInfo && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full relative max-h-[80vh] flex flex-col">
-            <button className="absolute top-2 right-2 text-gray-400 hover:text-indigo-600 text-2xl font-bold" onClick={() => setSelectedPlayer(null)}>&times;</button>
-            <h2 className="text-2xl font-bold mb-4 text-indigo-800 text-center">Fixture Info for {selectedPlayer.web_name}</h2>
-            <pre className="text-xs overflow-x-auto bg-gray-100 rounded p-4 max-h-96">{JSON.stringify(fixtureInfo, null, 2)}</pre>
+            {bench.map(player => (
+              <PlayerCard
+                key={player.id}
+                player={player}
+                positionLabel={POSITION_MAP[player.element_type]?.slice(0, 3).toUpperCase() || ''}
+                colorClass="bg-gray-200 text-gray-700"
+                pointsColorClass="text-gray-600"
+                showPoints={showPoints}
+                getPointsAndBonus={getPointsAndBonus}
+                getPlayerFaceUrl={getPlayerFaceUrl}
+                getCaptainStatus={getCaptainStatus}
+                getPointsBreakdown={getPointsBreakdown}
+                activeTooltipId={activeTooltipId}
+                setActiveTooltipId={setActiveTooltipId}
+              />
+            ))}
           </div>
         </div>
       )}
