@@ -60,17 +60,17 @@ const API_BASE = 'http://localhost:5000/api';
 
 const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => {
   // FPL context types
-  const { fixtures, events, rawBootstrapData, teams, loading: fplLoading } = useFplData() as {
+  const { fixtures, events, rawBootstrapData, teams, loading: fplLoading, players } = useFplData() as {
     fixtures: FPLFixture[];
     events: FPLEvent[];
     rawBootstrapData: any;
     teams: FPLTeam[];
     loading: boolean;
+    players: FPLPlayer[];
   };
   const [loading, setLoading] = useState<boolean>(true);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [allPlayers, setAllPlayers] = useState<FPLPlayer[]>([]);
   const [isCompareOpen, setIsCompareOpen] = useState<boolean>(false);
   const [comparePlayers, setComparePlayers] = useState<{ out: PlayerCompareModalPlayer | null; in: PlayerCompareModalPlayer | null }>({ out: null, in: null });
 
@@ -94,15 +94,9 @@ const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => 
         const teamData = await teamRes.json();
 
         // --- Suggestion Logic ---
-        const allPlayersData: FPLPlayer[] = rawBootstrapData.elements.map((player: FPLPlayer) => ({
-          ...player,
-          team_short_name: teams.find((t) => t.id === player.team)?.short_name || ''
-        }));
-        setAllPlayers(allPlayersData);
-
         const userPicks = teamData.picks || [];
         const userPlayerIds = userPicks.map((p: any) => p.element);
-        const userPlayers = allPlayersData.filter((p) => userPlayerIds.includes(p.id));
+        const userPlayers = players.filter((p) => userPlayerIds.includes(p.id));
         const userBank = (teamData.transfers && typeof teamData.transfers.bank === 'number')
           ? teamData.transfers.bank / 10
           : 0;
@@ -134,8 +128,8 @@ const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => 
           const oppTeam = teams.find((t) => t.id === oppId);
           const homeAway = fixture.team_h === team.id ? 'H' : 'A';
           return oppTeam ? `${oppTeam.short_name} (${homeAway})` : '';
-        };
-
+        };        
+        
         const getNextFixtureDifficulty = (player: FPLPlayer): number | null => {
           const team = teams.find((t) => t.id === player.team);
           if (!team || !fixtures.length) return null;
@@ -147,10 +141,11 @@ const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => 
           if (!fixture) return null;
           return fixture.team_h === team.id ? fixture.team_h_difficulty : fixture.team_a_difficulty;
         };
-        const alreadyInTeam = (id: number) => userPlayerIds.includes(id);
+        const alreadyInTeam = (id: number) => userPlayerIds.includes(id);        
         const suggestedReplacements = new Set<number>(); // Track suggested replacements
         const findReplacement = (outPlayer: FPLPlayer): FPLPlayer | undefined => {
-          return allPlayersData
+          // Try with strict criteria first
+          const strictMatches = players
             .filter((p) => {
               const fixtureDifficulty = getNextFixtureDifficulty(p);
               return p.element_type === outPlayer.element_type &&
@@ -162,10 +157,45 @@ const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => 
                 fixtureDifficulty !== null &&
                 fixtureDifficulty <= 3;
             })
-            .sort((a, b) => parseFloat(b.form) - parseFloat(a.form))
-            [0];
-        };
-        // Flagged players
+            .sort((a, b) => parseFloat(b.form) - parseFloat(a.form));
+          
+          if (strictMatches.length > 0) {
+            return strictMatches[0];
+          }
+          
+          // If no strict matches, try with more lenient criteria
+          const lenientMatches = players
+            .filter((p) => {
+              const fixtureDifficulty = getNextFixtureDifficulty(p);
+              return p.element_type === outPlayer.element_type &&
+                p.status === 'a' &&
+                !alreadyInTeam(p.id) &&
+                !suggestedReplacements.has(p.id) &&
+                parseFloat(p.form) > 3.5 && // Lower form requirement
+                p.now_cost <= outPlayer.now_cost + userBank * 10 &&
+                fixtureDifficulty !== null &&
+                fixtureDifficulty <= 4; // Allow slightly harder fixtures
+            })
+            .sort((a, b) => parseFloat(b.form) - parseFloat(a.form));
+            
+          if (lenientMatches.length > 0) {
+            return lenientMatches[0];
+          }
+          
+          // Final fallback with minimal requirements
+          const fallbackMatches = players
+            .filter((p) => 
+              p.element_type === outPlayer.element_type &&
+              p.status === 'a' &&
+              !alreadyInTeam(p.id) &&
+              !suggestedReplacements.has(p.id) &&
+              parseFloat(p.form) > 3.5 &&
+              p.now_cost <= outPlayer.now_cost + userBank * 10 // Affordable
+            )
+            .sort((a, b) => parseFloat(b.form) - parseFloat(a.form));
+            
+          return fallbackMatches.length > 0 ? fallbackMatches[0] : undefined;
+        };        // Flagged players
         for (const p of flagged) {
           const replacement = findReplacement(p);
           if (replacement) {
@@ -180,9 +210,12 @@ const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => 
             suggestedReplacements.add(replacement.id);
           }
         }
+        
         // Poor form players (avoid duplicates)
         for (const p of poorForm) {
-          if (flagged.includes(p)) continue;
+          if (flagged.includes(p)) {
+            continue;
+          }
           const replacement = findReplacement(p);
           if (replacement) {
             suggestions.push({
@@ -194,6 +227,8 @@ const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => 
               nextFixture: getFixtureShort(replacement),
             });
             suggestedReplacements.add(replacement.id);
+          } else {
+            console.log(`No replacement found for ${p.web_name}`);
           }
         }
         setSuggestions(suggestions);
@@ -239,19 +274,19 @@ const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => 
               <div>
                 <span className="font-semibold text-gray-700">OUT:</span> {s.out}
                 <span className="text-xs text-gray-500 ml-1">
-                  ({allPlayers.find(p => p.web_name === s.out)?.team_short_name || ''})
+                  ({players.find(p => p.web_name === s.out)?.team_short_name || ''})
                 </span>
                 <span className="mx-1">&rarr;</span>
                 <span className="font-semibold text-green-700">IN:</span> {s.in}
                 <span className="text-xs text-gray-500 ml-1">
-                  ({allPlayers.find(p => p.web_name === s.in)?.team_short_name || ''})
+                  ({players.find(p => p.web_name === s.in)?.team_short_name || ''})
                 </span>
                 <div className="text-xs text-gray-500">Reason: {s.reason} | Form: {s.outForm} &rarr; {s.inForm} | Next: {s.nextFixture}</div>
               </div>
               <button
                 onClick={() => {
-                  const outPlayer = allPlayers.find(p => p.web_name === s.out) as PlayerCompareModalPlayer | null;
-                  const inPlayer = allPlayers.find(p => p.web_name === s.in) as PlayerCompareModalPlayer | null;
+                  const outPlayer = players.find(p => p.web_name === s.out) as PlayerCompareModalPlayer | null;
+                  const inPlayer = players.find(p => p.web_name === s.in) as PlayerCompareModalPlayer | null;
                   setComparePlayers({ out: outPlayer, in: inPlayer });
                   setIsCompareOpen(true);
                 }}

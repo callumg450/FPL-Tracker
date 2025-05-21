@@ -7,7 +7,12 @@ type Team = {
   name: string;
   short_name: string;
 };
-type Event = { id: number; name: string; is_current?: boolean };
+type Event = { 
+  id: number; 
+  name: string; 
+  is_current?: boolean;
+  finished: boolean;
+};
 type Fixture = {
   id: number;
   team_h: number;
@@ -25,13 +30,63 @@ const FixturesPage = ({ setFixtureModal }: { setFixtureModal: (f: any) => void }
     teams: Team[];
     events: Event[];
     allFixtures: Fixture[];
-    };
-
-  useEffect(() => {
-        const currentEvent = events.find((e: Event) => e.is_current);
-        setSelectedGameweek(currentEvent ? currentEvent.id : 1);
+    };  useEffect(() => {
+    setLoading(true);
+    if (events && events.length > 0 && allFixtures && allFixtures.length > 0) {
+      let eventToUse;
+      
+      // First try to find the current event (live gameweek)
+      const currentEvent = events.find((e: Event) => e.is_current);
+      
+      // If there's a current event, use it
+      if (currentEvent && !currentEvent.finished) {
+        eventToUse = currentEvent;
+      } else {
+        // Get today's date for comparison
+        const today = new Date();
+        
+        // Find the next upcoming gameweek by looking at fixtures
+        const upcomingEvents = events
+          .filter(event => {
+            // Find fixtures in this event
+            const eventFixtures = allFixtures.filter(f => {
+              // This assumes each fixture has an event_id property
+              // If not, we need to find another way to associate fixtures with events
+              return (f as any).event === event.id;
+            });
+            
+            // Check if any fixture in this event is in the future
+            return eventFixtures.some(f => 
+              f.kickoff_time && new Date(f.kickoff_time) > today
+            );
+          })
+          .sort((a, b) => a.id - b.id); // Sort by ID to get the earliest upcoming event
+        
+        if (upcomingEvents.length > 0) {
+          // Use the next upcoming gameweek
+          eventToUse = upcomingEvents[0];
+        } else {
+          // No upcoming events, use the last gameweek of the season
+          const sortedEvents = [...events].sort((a, b) => b.id - a.id);
+          eventToUse = sortedEvents[0]; // Get the last gameweek
+        }
+      }
+      
+      setSelectedGameweek(eventToUse ? eventToUse.id : 1);
+      
+      // Filter fixtures for the selected gameweek
+      const filteredFixtures = allFixtures.filter(f => 
+        (f as any).event === (eventToUse?.id || 1)
+      );
+      
+      if (filteredFixtures.length > 0) {
+        setFixtures(filteredFixtures);
+      } else {
         setFixtures(allFixtures);
-  }, []);
+      }
+    }
+    setLoading(false);
+  }, [events, allFixtures]);
 
   // Fetch fixtures for selected gameweek
   useEffect(() => {
@@ -99,23 +154,7 @@ const FixturesPage = ({ setFixtureModal }: { setFixtureModal: (f: any) => void }
       <h1 className="text-4xl font-extrabold text-center mb-8 text-indigo-800 drop-shadow-lg tracking-tight">
         FPL Fixtures
       </h1>
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
-        <label className="font-semibold text-lg text-indigo-700" htmlFor="gameweek-select">
-          Select Gameweek:
-        </label>
-        <select
-          id="gameweek-select"
-          className="border-2 border-indigo-300 rounded-lg px-4 py-2 text-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
-          value={selectedGameweek ?? ''}
-          onChange={e => setSelectedGameweek(Number(e.target.value))}
-        >
-          {events.map((event) => (
-            <option key={event.id} value={event.id}>
-              {event.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      
       {loading ? (
         <div className="text-center text-xl text-indigo-600 animate-pulse">Loading fixtures...</div>
       ) : error ? (
@@ -123,6 +162,24 @@ const FixturesPage = ({ setFixtureModal }: { setFixtureModal: (f: any) => void }
       ) : fixtures.length === 0 ? (
         <div className="text-center text-gray-500">No fixtures for this gameweek.</div>
       ) : (
+      <>
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
+          <label className="font-semibold text-lg text-indigo-700" htmlFor="gameweek-select">
+            Select Gameweek:
+          </label>
+          <select
+            id="gameweek-select"
+            className="border-2 border-indigo-300 rounded-lg px-4 py-2 text-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+            value={selectedGameweek ?? ''}
+            onChange={e => setSelectedGameweek(Number(e.target.value))}
+          >
+            {events.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <ul className="divide-y divide-indigo-100">
           {fixtures.map((fixture) => (
             <li
@@ -189,6 +246,7 @@ const FixturesPage = ({ setFixtureModal }: { setFixtureModal: (f: any) => void }
             </li>
           ))}
         </ul>
+      </>
       )}
     </div>
   );
