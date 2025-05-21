@@ -157,6 +157,23 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
     }, 0);
   };
 
+  // List of all possible chips in FPL
+const ALL_CHIPS = [
+  'wildcard',
+  'freehit',
+  'bboost',
+  '3xc',
+  'manager'
+];
+
+const CHIP_LABELS: Record<string, string> = {
+  wildcard: 'Wildcard',
+  freehit: 'Free Hit',
+  bboost: 'Bench Boost',
+  '3xc': 'Triple Captain',
+  manager: 'Manager'
+};
+
   // Fetch standings for selected league
   const fetchStandings = async (league: UserLeague) => {
     setLoading(true);
@@ -204,40 +221,50 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
         const teamsWithLivePoints = await Promise.all(
           data.standings.results.map(async (entry: any) => {
             try {
+              // Fetch chips history for this entry
+              let chipsPlayed: string[] = [];
+              try {
+                const chipsRes = await fetch(`http://localhost:5000/api/entry-history/${entry.entry}`);
+                if (chipsRes.ok) {
+                  const chipsData = await chipsRes.json();
+                  chipsPlayed = (chipsData.chips || []).map((chip: any) => chip.name);
+                }
+              } catch (err) {
+                console.log("chips error", err);
+                // Ignore chips fetch error, just show none
+              }
+              // Fetch picks for this entry
               const picksRes = await fetch(`http://localhost:5000/api/user-team/${entry.entry}/${currentEventId}`);
-              if (!picksRes.ok) return entry;
+              if (!picksRes.ok) return { ...entry, chipsPlayed };
               const picksData = await picksRes.json();
-              
               // If the gameweek is finished, don't recalculate points - just add transfer cost for display
               if (isCurrentEventFinished) {
                 return {
                   ...entry,
-                  event_transfers_cost: picksData.entry_history?.event_transfers_cost || 0
+                  event_transfers_cost: picksData.entry_history?.event_transfers_cost || 0,
+                  chipsPlayed
                 };
               }
-              
               // For unfinished gameweeks, calculate live points
               const livePoints = calculateLivePoints(picksData.picks, liveData.elements);
               const transferCost = picksData.entry_history?.event_transfers_cost || 0;
               const eventTotal = livePoints - transferCost;
-              
               // Calculate previous total (total minus event_total)
               const previousTotal =
                 typeof entry.total === 'number' && typeof entry.event_total === 'number'
                   ? entry.total - entry.event_total
                   : 0;
-
               const totalPoints = previousTotal + eventTotal;
-
               return {
                 ...entry,
                 event_total: eventTotal,
                 total: totalPoints,
-                event_transfers_cost: transferCost
+                event_transfers_cost: transferCost,
+                chipsPlayed
               };
             } catch (err) {
               console.error(`Failed to fetch picks for entry ${entry.entry}:`, err);
-              return entry;
+              return { ...entry };
             }
           })
         );        // Sort by total points (which now includes live points)
@@ -414,10 +441,11 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
                         <th className="px-2 py-1 border">Hits</th>
                         <th className="px-2 py-1 border">Total Points</th>
                         <th className="px-2 py-1 border">Rank Change</th>
+                        <th className="px-2 py-1 border">Chips Left</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {standings.map(entry => (                        
+                      {standings.map(entry => (
                         <tr key={entry.id} className="text-center hover:bg-indigo-50 cursor-pointer" onClick={() => fetchEntryPicks(entry)}>
                           <td className="border px-2 py-1 font-bold">{entry.rank}</td>
                           <td className="border px-2 py-1">{entry.entry_name}</td>
@@ -435,6 +463,22 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
                                 ? <span className="text-red-600 font-bold">{entry.last_rank - entry.rank}</span>
                                 : <span className="font-bold">0</span>
                               : '-'}
+                          </td>
+                          <td className="border px-2 py-1">
+                            {/* Chips left: show as icons or text */}
+                            {(() => {
+                              const chipsPlayed = Array.isArray(entry.chipsPlayed)
+                                ? entry.chipsPlayed
+                                : [];
+                              const chipsLeft = ALL_CHIPS.filter(chip => !chipsPlayed.includes(chip));
+                              return chipsLeft.length === 0
+                                ? <span className="text-gray-400 text-xs">None</span>
+                                : chipsLeft.map(chip => (
+                                    <span key={chip} className="inline-block bg-green-100 text-green-800 rounded px-2 py-0.5 text-xs font-semibold mr-1 mb-0.5">
+                                      {CHIP_LABELS[chip] || chip}
+                                    </span>
+                                  ));
+                            })()}
                           </td>
                         </tr>
                       ))}
