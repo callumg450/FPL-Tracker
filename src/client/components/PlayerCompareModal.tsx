@@ -1,3 +1,4 @@
+//Comparing two players in the Transfer Suggestion component.
 import React, { useEffect, useState } from 'react';
 import { useFplData } from '../contexts/FplDataContext';
 

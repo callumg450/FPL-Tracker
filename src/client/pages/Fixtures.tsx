@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useFplData } from '../contexts/FplDataContext.jsx';
+import FixturePlayersModal from '../components/FixturePlayersModal.tsx';
+import PlayerDetailModal from '../components/PlayerDetailModal.tsx';
 
 type Team = {
   id: number;
@@ -20,12 +22,14 @@ type Fixture = {
   kickoff_time?: string;
 };
 
-const FixturesPage = ({ setFixtureModal }: { setFixtureModal: (f: any) => void }) => {
+const FixturesPage = () => {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [selectedGameweek, setSelectedGameweek] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFixture, setSelectedFixture] = useState<Fixture | null>(null);
+  const [showFixturePlayersModal, setShowFixturePlayersModal] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
   const { teams, events, allFixtures } = useFplData() as {
     teams: Team[];
     events: Event[];
@@ -135,18 +139,11 @@ const FixturesPage = ({ setFixtureModal }: { setFixtureModal: (f: any) => void }
     }).reverse();
   }, []);
 
-  // Modal open handler
+  // Modal open handler (override previous)
   const handleFixtureClick = (fixture: Fixture) => {
     setSelectedFixture(fixture);
-    setFixtureModal({ open: true, fixture });
+    setShowFixturePlayersModal(true);
   };
-
-  // Pass all required props to FixturePlayersModal via App
-  useEffect(() => {
-    if (setFixtureModal) {
-      setFixtureModal((prev: any) => ({ ...prev, fixture: selectedFixture }));
-    }
-  }, [selectedFixture, setFixtureModal]);
 
   // Render UI
   return (
@@ -247,6 +244,19 @@ const FixturesPage = ({ setFixtureModal }: { setFixtureModal: (f: any) => void }
           ))}
         </ul>
       </>
+      )}
+      {/* FixturePlayersModal and PlayerDetailModal moved here */}
+      <FixturePlayersModal
+        open={showFixturePlayersModal}
+        fixture={selectedFixture}
+        setOpen={setShowFixturePlayersModal}
+        setSelectedPlayer={setSelectedPlayer}
+      />
+      {selectedPlayer && (
+        <PlayerDetailModal
+          player={selectedPlayer}
+          onClose={() => setSelectedPlayer(null)}
+        />
       )}
     </div>
   );
