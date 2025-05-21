@@ -197,25 +197,43 @@ const Leagues: React.FC<{ userId?: string }> = ({ userId }) => {
         const liveData = await liveRes.json();
 
         // Fetch each team's picks and calculate live points
+        // Determine if the current event is finished
+        const currentEvent = events?.find((e: any) => e.id === currentEventId);
+        const isCurrentEventFinished = currentEvent?.finished;  
+        console.log(isCurrentEventFinished, 'isCurrentEventFinished');      
         const teamsWithLivePoints = await Promise.all(
           data.standings.results.map(async (entry: any) => {
-            try {              // Use eventId instead of currentEventId since we've already validated it above
-              const picksRes = await fetch(`http://localhost:5000/api/user-team/${entry.entry}/${eventId}`);
+            try {
+              const picksRes = await fetch(`http://localhost:5000/api/user-team/${entry.entry}/${currentEventId}`);
               if (!picksRes.ok) return entry;
-              const picksData = await picksRes.json();const livePoints = calculateLivePoints(picksData.picks, liveData.elements);
-              // Store transfer cost explicitly
-              const transfersCost = picksData.entry_history?.event_transfers_cost || 0;
-              // Add transfer cost
-              const eventTotal = livePoints - transfersCost;
+              const picksData = await picksRes.json();
               
-              // Calculate total points by replacing the old gameweek score with the new live score
-              const totalPoints = entry.total - entry.event_total + eventTotal;
+              // If the gameweek is finished, don't recalculate points - just add transfer cost for display
+              if (isCurrentEventFinished) {
+                return {
+                  ...entry,
+                  event_transfers_cost: picksData.entry_history?.event_transfers_cost || 0
+                };
+              }
               
+              // For unfinished gameweeks, calculate live points
+              const livePoints = calculateLivePoints(picksData.picks, liveData.elements);
+              const transferCost = picksData.entry_history?.event_transfers_cost || 0;
+              const eventTotal = livePoints - transferCost;
+              
+              // Calculate previous total (total minus event_total)
+              const previousTotal =
+                typeof entry.total === 'number' && typeof entry.event_total === 'number'
+                  ? entry.total - entry.event_total
+                  : 0;
+
+              const totalPoints = previousTotal + eventTotal;
+
               return {
                 ...entry,
-                event_total: eventTotal, // Override event_total with live points
-                total: totalPoints, // Update total points with live score
-                event_transfers_cost: transfersCost // Store transfer cost explicitly for the Hits column
+                event_total: eventTotal,
+                total: totalPoints,
+                event_transfers_cost: transferCost
               };
             } catch (err) {
               console.error(`Failed to fetch picks for entry ${entry.entry}:`, err);
