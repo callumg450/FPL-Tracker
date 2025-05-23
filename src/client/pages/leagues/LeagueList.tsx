@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useFplData } from '../../contexts/FplDataContext';
 
 interface UserLeague {
   id: number;
@@ -9,14 +10,18 @@ interface UserLeague {
   [key: string]: any;
 }
 
-const LeagueList: React.FC<{ userId?: string }> = ({ userId }) => {
+const LeagueList: React.FC<{}> = () => {
+  const { userId } = useFplData() as { userId: string };
   const [leagues, setLeagues] = useState<UserLeague[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setError('Please enter your FPL ID to view your leagues');
+      return;
+    }
     setLoading(true);
     setError(null);
     fetch(`${import.meta.env.VITE_BASE_URL}/user-leagues/${userId}`)
@@ -36,7 +41,11 @@ const LeagueList: React.FC<{ userId?: string }> = ({ userId }) => {
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl p-8 mt-8">
       <h2 className="text-xl font-semibold text-center mb-4">Your Leagues</h2>
-      {loading ? (
+      {!userId ? (
+        <div className="text-center text-gray-500">
+          Please go to the home page and enter your FPL ID first.
+        </div>
+      ) : loading ? (
         <div className="text-center text-gray-500">Loading your leagues...</div>
       ) : error ? (
         <div className="text-red-500 text-center mb-4">{error}</div>
@@ -51,7 +60,9 @@ const LeagueList: React.FC<{ userId?: string }> = ({ userId }) => {
               onClick={() => navigate(`/leagues/${league.id}`)}
             >
               <div className="text-lg">{league.name}</div>
-              <div className="text-xs mt-1">{league.league_type === 'h' ? 'Head-to-Head' : 'Classic'}</div>
+              <div className="text-xs mt-1">
+                {league.league_type === 'h' ? 'Head-to-Head' : 'Classic'}
+              </div>
             </button>
           ))}
         </div>

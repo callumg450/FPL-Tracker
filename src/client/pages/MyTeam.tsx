@@ -10,9 +10,7 @@ const POSITION_MAP: Record<number, string> = {
   4: 'Forward',
 };
 
-interface MyTeamProps {
-  userId: string;
-}
+interface MyTeamProps {}
 
 // Add types for team, player, pick, liveData, entryHistory
 interface Player {
@@ -51,7 +49,11 @@ interface Event {
   [key: string]: any;
 }
 
-const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
+const MyTeam: React.FC<MyTeamProps> = () => {
+  const { userId, setUserId } = useFplData() as {
+    userId: string;
+    setUserId: (id: string) => void;
+  };
   const [inputUserId, setInputUserId] = useState(userId || '');
   const [submittedUserId, setSubmittedUserId] = useState(userId || '');
   const [team, setTeam] = useState<Team | null>(null);
@@ -182,7 +184,11 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
     <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl p-8 mt-8">
       <h1 className="text-3xl font-bold text-center mb-8 text-blue-800">View FPL Team</h1>
       {submittedUserId && <TransferSuggestions userId={submittedUserId} />}
-      <form onSubmit={e => { e.preventDefault(); }} className="space-y-4">
+      <form onSubmit={e => { 
+        e.preventDefault(); 
+        setSubmittedUserId(inputUserId);
+        setUserId(inputUserId);
+      }} className="space-y-4">
         {/* Only show FPL User ID input if not already submitted */}
         {submittedUserId === '' && (
           <div>

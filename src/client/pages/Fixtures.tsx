@@ -27,18 +27,19 @@ type Fixture = {
 const FixturesPage = () => {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [selectedGameweek, setSelectedGameweek] = useState<number | null>(null);
-  const [fplId, setFplId] = useState<string>(() => sessionStorage.getItem('userId') || '');
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [selectedFixture, setSelectedFixture] = useState<Fixture | null>(null);
   const [showFixturePlayersModal, setShowFixturePlayersModal] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const navigate = useNavigate();
-  const { teams, events, allFixtures } = useFplData() as {
+  const { teams, events, allFixtures, userId, setUserId } = useFplData() as {
     teams: Team[];
     events: Event[];
     allFixtures: Fixture[];
-    };  useEffect(() => {
+    userId: string;
+    setUserId: (id: string) => void;
+  };  useEffect(() => {
     console.log(`${import.meta.env.VITE_BASE_URL}`)
 
     setLoading(true);
@@ -154,11 +155,9 @@ const FixturesPage = () => {
   // Handle FPL ID submission
   const handleFplIdSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fplId) return;
+    if (!userId) return;
 
     try {
-      // Save FPL ID to sessionStorage for persistence
-      sessionStorage.setItem('userId', fplId);
       navigate('/my-team');
       setError(null);
     } catch (err) {
@@ -181,8 +180,8 @@ const FixturesPage = () => {
             <div className="relative">
               <input
                 type="text"
-                value={fplId}
-                onChange={(e) => setFplId(e.target.value)}
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
                 placeholder="Enter your FPL ID"
                 className="w-full px-4 py-2 border-2 border-indigo-200 rounded-lg 
                          focus:outline-none focus:border-indigo-500 

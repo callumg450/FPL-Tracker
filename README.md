@@ -50,6 +50,10 @@ npm run dev
 node src/proxy/index.js
 ```
 
+Netlify Deployment:
+npm run build
+netlify deploy --prod
+
 ## Environment Setup
 
 Create a `.env` file in the root directory with:

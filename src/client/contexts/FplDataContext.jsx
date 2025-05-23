@@ -9,6 +9,16 @@ export const FplDataProvider = ({ children }) => {
   const [fixtures, setFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [userId, setUserId] = useState(() => sessionStorage.getItem('userId') || '');
+
+  // Persist userId to sessionStorage whenever it changes
+  useEffect(() => {
+    if (userId) {
+      sessionStorage.setItem('userId', userId);
+    } else {
+      sessionStorage.removeItem('userId');
+    }
+  }, [userId]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -64,7 +74,9 @@ export const FplDataProvider = ({ children }) => {
       fixtures, //Upcoming fixtures,
       allFixtures,
       currentGameweek: getCurrentGameweek(),
-      rawBootstrapData: bootstrapData
+      rawBootstrapData: bootstrapData,
+      userId,
+      setUserId
     }}>
       {children}
     </FplDataContext.Provider>
