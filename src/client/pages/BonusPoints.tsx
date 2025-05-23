@@ -62,7 +62,7 @@ const BonusPoints: React.FC<BonusPointsProps> = () => {
     if (!selectedGameweek) return;
     
     setLoading(true);
-    fetch(`http://localhost:5000/api/fixtures?event=${selectedGameweek}`)
+    fetch(`${import.meta.env.VITE_BASE_URL}/fixtures?event=${selectedGameweek}`)
       .then(res => res.json())
       .then(data => {
         console.log('Fixtures data:', data);

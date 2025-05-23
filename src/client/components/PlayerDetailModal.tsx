@@ -20,7 +20,7 @@ const PlayerDetailModal = ({
     setLoadingPlayerDetails(true);
     const fetchSummary = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/element-summary/${player.id}/`);
+        const res = await fetch(`${import.meta.env.VITE_BASE_URL}/element-summary/${player.id}/`);
         const summary = await res.json();
         setPlayerSummary(summary);
       } catch {

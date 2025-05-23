@@ -26,3 +26,7 @@ dist-ssr
 *.sw?
 
 .github
+# Local Netlify folder
+.netlify
+
+.env.production

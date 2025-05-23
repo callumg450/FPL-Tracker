@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = '${import.meta.env.VITE_BASE_URL}';
 const FplDataContext = createContext(null);
 
 export const FplDataProvider = ({ children }) => {
@@ -14,13 +14,13 @@ export const FplDataProvider = ({ children }) => {
     const fetchInitialData = async () => {
       try {
         // Fetch bootstrap data (teams, players, events)
-        const bootstrapRes = await fetch(`${API_BASE}/bootstrap-static`);
+        const bootstrapRes = await fetch(`${import.meta.env.VITE_BASE_URL}/bootstrap-static`);
         if (!bootstrapRes.ok) throw new Error('Could not fetch bootstrap data');
         const bootstrap = await bootstrapRes.json();
         setBootstrapData(bootstrap);
 
         // Fetch fixtures
-        const fixturesRes = await fetch(`${API_BASE}/fixtures`);
+        const fixturesRes = await fetch(`${import.meta.env.VITE_BASE_URL}/fixtures`);
         if (fixturesRes.ok) {
           const allFixtures = await fixturesRes.json();
           setAllFixtures(allFixtures);

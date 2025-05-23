@@ -95,11 +95,11 @@ const LeagueStandings: React.FC = () => {
     // Try both classic and h2h endpoints
     const fetchStandings = async () => {
       try {
-        let url = `http://localhost:5000/api/leagues-classic/${leagueId}/standings/`;
+        let url = `${import.meta.env.VITE_BASE_URL}/leagues-classic/${leagueId}/standings/`;
         let res = await fetch(url);
         if (!res.ok) {
           // Try h2h
-          url = `http://localhost:5000/api/leagues-h2h/${leagueId}/standings/`;
+          url = `${import.meta.env.VITE_BASE_URL}/leagues-h2h/${leagueId}/standings/`;
           res = await fetch(url);
         }
         if (!res.ok) throw new Error('Failed to fetch league standings');
@@ -114,7 +114,7 @@ const LeagueStandings: React.FC = () => {
           setCurrentEventId(eventId);
         }
         if (!eventId) throw new Error('Current gameweek could not be determined');
-        const liveRes = await fetch(`http://localhost:5000/api/event/${eventId}/live/`);
+        const liveRes = await fetch(`${import.meta.env.VITE_BASE_URL}/event/${eventId}/live/`);
         if (!liveRes.ok) throw new Error('Failed to fetch live data');
         const liveData = await liveRes.json();
         const currentEvent = events?.find((e: any) => e.id === eventId);
@@ -124,13 +124,13 @@ const LeagueStandings: React.FC = () => {
             try {
               let chipsPlayed: string[] = [];
               try {
-                const chipsRes = await fetch(`http://localhost:5000/api/entry-history/${entry.entry}`);
+                const chipsRes = await fetch(`${import.meta.env.VITE_BASE_URL}/entry-history/${entry.entry}`);
                 if (chipsRes.ok) {
                   const chipsData = await chipsRes.json();
                   chipsPlayed = (chipsData.chips || []).map((chip: any) => chip.name);
                 }
               } catch {}
-              const picksRes = await fetch(`http://localhost:5000/api/user-team/${entry.entry}/${eventId}`);
+              const picksRes = await fetch(`${import.meta.env.VITE_BASE_URL}/user-team/${entry.entry}/${eventId}`);
               if (!picksRes.ok) return { ...entry, chipsPlayed };
               const picksData = await picksRes.json();
               if (isCurrentEventFinished) {
@@ -248,11 +248,11 @@ const LeagueStandings: React.FC = () => {
           throw new Error('Current gameweek not found');
         }
       }
-      const liveRes = await fetch(`http://localhost:5000/api/event/${eventId}/live/`);
+      const liveRes = await fetch(`${import.meta.env.VITE_BASE_URL}/event/${eventId}/live/`);
       if (!liveRes.ok) throw new Error('Failed to fetch live data');
       const liveDataResponse = await liveRes.json();
       setLiveData(liveDataResponse.elements || []);
-      const res = await fetch(`http://localhost:5000/api/user-team/${entry.entry}/${eventId}`);
+      const res = await fetch(`${import.meta.env.VITE_BASE_URL}/user-team/${entry.entry}/${eventId}`);
       if (!res.ok) throw new Error('Failed to fetch team picks');
       const data = await res.json();
       setEntryPicks(data);
@@ -286,7 +286,7 @@ const LeagueStandings: React.FC = () => {
       return;
     }
     const fetchLiveData = () => {
-      fetch(`http://localhost:5000/api/event/${currentEventId}/live/`)
+      fetch(`${import.meta.env.VITE_BASE_URL}/event/${currentEventId}/live/`)
         .then(res => res.json())
         .then(data => setLiveData(data.elements || []))
         .catch(() => {});

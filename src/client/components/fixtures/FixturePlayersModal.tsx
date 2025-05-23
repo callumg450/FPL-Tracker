@@ -44,7 +44,7 @@ const FixturePlayersModal = ({
             try {
               let summary = playerSummaryCache[player.id];
               if (!summary) {
-                const res = await fetch(`http://localhost:5000/api/element-summary/${player.id}/`);
+                const res = await fetch(`${import.meta.env.VITE_BASE_URL}/element-summary/${player.id}/`);
                 summary = await res.json();
                 playerSummaryCache[player.id] = summary;
               }

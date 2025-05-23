@@ -39,6 +39,8 @@ const FixturesPage = () => {
     events: Event[];
     allFixtures: Fixture[];
     };  useEffect(() => {
+    console.log(`${import.meta.env.VITE_BASE_URL}`)
+
     setLoading(true);
     if (events && events.length > 0 && allFixtures && allFixtures.length > 0) {
       let eventToUse;
@@ -103,7 +105,7 @@ const FixturesPage = () => {
     setError(null);
     const fetchFixtures = async () => {
       try {
-        const fixturesRes = await fetch(`http://localhost:5000/api/fixtures?event=${selectedGameweek}`);
+        const fixturesRes = await fetch(`${import.meta.env.VITE_BASE_URL}/fixtures?event=${selectedGameweek}`);
         const fixturesData = await fixturesRes.json();
         setFixtures(fixturesData);
       } catch (err) {
@@ -169,6 +171,7 @@ const FixturesPage = () => {
     <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
       <h1 className="text-4xl font-extrabold text-center mb-4 text-indigo-800 drop-shadow-lg tracking-tight">
         FPL Tracker
+        
       </h1>
 
       {/* FPL ID Input */}

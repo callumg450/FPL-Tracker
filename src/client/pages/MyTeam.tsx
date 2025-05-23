@@ -79,7 +79,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
       setLiveData([]); // Use empty array instead of null
       return;
     }
-    fetch(`http://localhost:5000/api/event/${selectedEventId}/live/`)
+    fetch(`${import.meta.env.VITE_BASE_URL}/event/${selectedEventId}/live/`)
       .then(res => res.json())
       .then(data => {console.log(data.elements); setLiveData(data.elements || [])});
   }, [selectedEventId]);
@@ -90,7 +90,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
     setLoading(true);
     setError(null);
     setTeam(null);
-    fetch(`http://localhost:5000/api/user-team/${submittedUserId}/${selectedEventId}`)
+    fetch(`${import.meta.env.VITE_BASE_URL}/user-team/${submittedUserId}/${selectedEventId}`)
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch team');
         return res.json();
@@ -103,7 +103,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
   // Fetch entry history for user (only when submittedUserId changes)
   useEffect(() => {
     if (!submittedUserId) return;
-    fetch(`http://localhost:5000/api/entry-history/${submittedUserId}`)
+    fetch(`${import.meta.env.VITE_BASE_URL}/entry-history/${submittedUserId}`)
       .then(res => res.json())
       .then(data => setEntryHistory(data));
   }, [submittedUserId]);
@@ -111,7 +111,7 @@ const MyTeam: React.FC<MyTeamProps> = ({ userId }) => {
   // Fetch fixtures for selected gameweek
   useEffect(() => {
     if (!selectedEventId) return;
-    fetch(`http://localhost:5000/api/fixtures?event=${selectedEventId}`)
+    fetch(`${import.meta.env.VITE_BASE_URL}/fixtures?event=${selectedEventId}`)
       .then(res => res.json())
       .then(data => setFixtures(data || []));
   }, [selectedEventId]);
