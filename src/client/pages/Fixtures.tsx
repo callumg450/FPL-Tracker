@@ -115,7 +115,7 @@ const FixturesPage = () => {
   const getTeam = useCallback((id: number) => teams.find((t) => t.id === id), [teams]);
   const getTeamLogo = useCallback((id: number) => {
     const team = getTeam(id);
-    return team ? `https://resources.premierleague.com/premierleague/badges/t${team.code}.png` : '';
+    return team ? `https://resources.premierleague.com/premierleague/badges/70/t${team.code}.png` : '';
   }, [getTeam]);
   const getTeamLastResults = useCallback((teamId: number, allFixtures: Fixture[], currentFixtureId: number, n = 3) => {
     const played = allFixtures
@@ -203,11 +203,7 @@ const FixturesPage = () => {
                 <img
                   src={getTeamLogo(fixture.team_h)}
                   alt={getTeam(fixture.team_h)?.name}
-                  className={
-                    getTeam(fixture.team_h)?.name === 'Liverpool'
-                      ? 'w-8 h-8 inline-block align-middle rounded-full bg-gray-200 ml-2'
-                      : 'w-8 h-8 inline-block align-middle rounded-full ml-2'
-                  }
+                  className="w-8 h-8 inline-block align-middle rounded-full ml-2"
                 />
                 {getTeam(fixture.team_h)?.short_name}
                 <span className="text-gray-400 font-normal mx-2">vs</span>
@@ -215,11 +211,7 @@ const FixturesPage = () => {
                 <img
                   src={getTeamLogo(fixture.team_a)}
                   alt={getTeam(fixture.team_a)?.name}
-                  className={
-                    getTeam(fixture.team_a)?.name === 'Liverpool'
-                      ? 'w-8 h-8 inline-block align-middle rounded-full bg-gray-200 mr-2'
-                      : 'w-8 h-8 inline-block align-middle rounded-full mr-2'
-                  }
+                  className="w-8 h-8 inline-block align-middle rounded-full mr-2"
                 />
                 {/* Last results for away team (outside) */}
                 <span className="flex items-center justify-center w-12 gap-1 ml-2">
