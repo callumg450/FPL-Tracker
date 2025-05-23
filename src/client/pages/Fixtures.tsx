@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useFplData } from '../contexts/FplDataContext.jsx';
-import FixturePlayersModal from '../components/FixturePlayersModal.tsx';
+import { useNavigate } from 'react-router-dom';
+import FixturePlayersModal from '../components/fixtures/FixturePlayersModal.tsx';
 import PlayerDetailModal from '../components/PlayerDetailModal.tsx';
+import FixtureCard from '../components/fixtures/FixtureCard.tsx';
 
 type Team = {
   id: number;
@@ -25,11 +27,13 @@ type Fixture = {
 const FixturesPage = () => {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [selectedGameweek, setSelectedGameweek] = useState<number | null>(null);
+  const [fplId, setFplId] = useState<string>(() => sessionStorage.getItem('userId') || '');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFixture, setSelectedFixture] = useState<Fixture | null>(null);
   const [showFixturePlayersModal, setShowFixturePlayersModal] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const navigate = useNavigate();
   const { teams, events, allFixtures } = useFplData() as {
     teams: Team[];
     events: Event[];
@@ -145,12 +149,56 @@ const FixturesPage = () => {
     setShowFixturePlayersModal(true);
   };
 
+  // Handle FPL ID submission
+  const handleFplIdSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fplId) return;
+
+    try {
+      // Save FPL ID to sessionStorage for persistence
+      sessionStorage.setItem('userId', fplId);
+      navigate('/my-team');
+      setError(null);
+    } catch (err) {
+      setError('Invalid FPL ID. Please try again.');
+    }
+  };
+
   // Render UI
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
-      <h1 className="text-4xl font-extrabold text-center mb-8 text-indigo-800 drop-shadow-lg tracking-tight">
-        FPL Fixtures
+      <h1 className="text-4xl font-extrabold text-center mb-4 text-indigo-800 drop-shadow-lg tracking-tight">
+        FPL Tracker
       </h1>
+
+      {/* FPL ID Input */}
+      <div className="max-w-md mx-auto mb-8">
+        <form onSubmit={handleFplIdSubmit} className="flex flex-col items-center gap-4">
+          <div className="w-full">
+            <div className="relative">
+              <input
+                type="text"
+                value={fplId}
+                onChange={(e) => setFplId(e.target.value)}
+                placeholder="Enter your FPL ID"
+                className="w-full px-4 py-2 border-2 border-indigo-200 rounded-lg 
+                         focus:outline-none focus:border-indigo-500 
+                         text-indigo-900 placeholder-indigo-300"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2
+                         px-4 py-1 bg-indigo-600 text-white rounded-md
+                         hover:bg-indigo-700 transition-colors
+                         text-sm font-medium"
+              >
+                Go 🚀
+              </button>
+            </div>
+            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          </div>
+        </form>
+      </div>
       
       {loading ? (
         <div className="text-center text-xl text-indigo-600 animate-pulse">Loading fixtures...</div>
@@ -160,84 +208,41 @@ const FixturesPage = () => {
         <div className="text-center text-gray-500">No fixtures for this gameweek.</div>
       ) : (
       <>
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
-          <label className="font-semibold text-lg text-indigo-700" htmlFor="gameweek-select">
-            Select Gameweek:
-          </label>
-          <select
-            id="gameweek-select"
-            className="border-2 border-indigo-300 rounded-lg px-4 py-2 text-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
-            value={selectedGameweek ?? ''}
-            onChange={e => setSelectedGameweek(Number(e.target.value))}
-          >
-            {events.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <ul className="divide-y divide-indigo-100">
-          {fixtures.map((fixture) => (
-            <li
-              key={fixture.id}
-              className="py-5 flex flex-col sm:flex-row items-center justify-between gap-2 cursor-pointer hover:bg-indigo-50 transition"
-              onClick={() => handleFixtureClick(fixture)}
+        <div className="flex flex-col items-center justify-center mb-12">
+          <div className="bg-white rounded-full px-6 py-3 shadow-md border border-indigo-100 inline-flex items-center gap-4 hover:shadow-lg transition-shadow">
+            <label className="font-semibold text-lg text-indigo-700" htmlFor="gameweek-select">
+              Gameweek:
+            </label>
+            <select
+              id="gameweek-select"
+              className="border-0 text-lg focus:outline-none focus:ring-0 text-indigo-600 font-medium bg-transparent"
+              value={selectedGameweek ?? ''}
+              onChange={e => setSelectedGameweek(Number(e.target.value))}
             >
-              <span className="font-bold text-indigo-700 text-lg flex-1 text-center flex items-center justify-center gap-2">
-                {/* Last results for home team (outside) */}
-                <span className="flex items-center justify-center w-12 gap-1 mr-2">
-                  {getTeamLastResults(fixture.team_h, allFixtures, fixture.id, 3).map((res, idx) => (
-                    <span
-                      key={idx}
-                      className={
-                        res === 'W' ? 'text-green-600 font-bold' :
-                        res === 'L' ? 'text-red-500 font-bold' :
-                        'text-gray-500 font-bold'
-                      }
-                    >
-                      {res}
-                    </span>
-                  ))}
-                </span>
-                <img
-                  src={getTeamLogo(fixture.team_h)}
-                  alt={getTeam(fixture.team_h)?.name}
-                  className="w-8 h-8 inline-block align-middle rounded-full ml-2"
-                />
-                {getTeam(fixture.team_h)?.short_name}
-                <span className="text-gray-400 font-normal mx-2">vs</span>
-                {getTeam(fixture.team_a)?.short_name}
-                <img
-                  src={getTeamLogo(fixture.team_a)}
-                  alt={getTeam(fixture.team_a)?.name}
-                  className="w-8 h-8 inline-block align-middle rounded-full mr-2"
-                />
-                {/* Last results for away team (outside) */}
-                <span className="flex items-center justify-center w-12 gap-1 ml-2">
-                  {getTeamLastResults(fixture.team_a, allFixtures, fixture.id, 3).map((res, idx) => (
-                    <span
-                      key={idx}
-                      className={
-                        res === 'W' ? 'text-green-600 font-bold' :
-                        res === 'L' ? 'text-red-500 font-bold' :
-                        'text-gray-500 font-bold'
-                      }
-                    >
-                      {res}
-                    </span>
-                  ))}
-                </span>
-              </span>
-              <span className="text-sm text-gray-600 font-mono flex-1 text-center">
-                {fixture.kickoff_time ? new Date(fixture.kickoff_time).toLocaleString() : 'TBD'}
-              </span>
-            </li>
+              {events.map((event) => (
+                <option key={event.id} value={event.id}>
+                  {event.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {fixtures.map((fixture) => (
+            <FixtureCard
+              key={fixture.id}
+              fixture={fixture}
+              getTeam={getTeam}
+              getTeamLogo={getTeamLogo}
+              getTeamLastResults={getTeamLastResults}
+              allFixtures={allFixtures}
+              onClick={handleFixtureClick}
+            />
           ))}
-        </ul>
+        </div>
       </>
       )}
-      {/* FixturePlayersModal and PlayerDetailModal moved here */}
+      {/* FixturePlayersModal and PlayerDetailModal */}
       <FixturePlayersModal
         open={showFixturePlayersModal}
         fixture={selectedFixture}

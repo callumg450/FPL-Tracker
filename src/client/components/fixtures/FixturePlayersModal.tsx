@@ -1,6 +1,6 @@
 //Displayed when clicking on a fixture in the fixtures list
 import { useEffect, useState } from 'react';
-import { useFplData } from '../contexts/FplDataContext';
+import { useFplData } from '../../contexts/FplDataContext';
 
 type Team = {
   id: number;
