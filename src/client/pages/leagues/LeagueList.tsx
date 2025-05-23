@@ -19,7 +19,7 @@ const LeagueList: React.FC<{ userId?: string }> = ({ userId }) => {
     if (!userId) return;
     setLoading(true);
     setError(null);
-    fetch(`${import.meta.env.VITE_BASE_URL}/api/user-leagues/${userId}`)
+    fetch(`${import.meta.env.VITE_BASE_URL}/user-leagues/${userId}`)
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch user leagues');
         return res.json();
