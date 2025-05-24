@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
-const API_BASE = '${import.meta.env.VITE_BASE_URL}';
+const API_BASE = import.meta.env.VITE_BASE_URL;
 const FplDataContext = createContext(null);
 
 export const FplDataProvider = ({ children }) => {
@@ -24,21 +24,20 @@ export const FplDataProvider = ({ children }) => {
     const fetchInitialData = async () => {
       try {
         // Fetch bootstrap data (teams, players, events)
-        const bootstrapRes = await fetch(`${import.meta.env.VITE_BASE_URL}/bootstrap-static`);
+        const bootstrapRes = await fetch(`${API_BASE}/bootstrap-static`);
         if (!bootstrapRes.ok) throw new Error('Could not fetch bootstrap data');
         const bootstrap = await bootstrapRes.json();
         setBootstrapData(bootstrap);
 
         // Fetch fixtures
-        const fixturesRes = await fetch(`${import.meta.env.VITE_BASE_URL}/fixtures`);
-        if (fixturesRes.ok) {
-          const allFixtures = await fixturesRes.json();
-          setAllFixtures(allFixtures);
-          
-          // Filter to only include fixtures that haven't been played yet
-          const upcomingFixtures = allFixtures.filter(f => !f.finished);
-          setFixtures(upcomingFixtures);
-        }
+        const fixturesRes = await fetch(`${API_BASE}/fixtures`);
+        if (!fixturesRes.ok) throw new Error('Could not fetch fixtures');
+        const fixturesData = await fixturesRes.json();
+        setAllFixtures(fixturesData);
+        
+        // Filter to only include fixtures that haven't been played yet
+        const upcomingFixtures = fixturesData.filter(f => !f.finished);
+        setFixtures(upcomingFixtures);
       } catch (err) {
         console.error('Error fetching FPL data:', err);
         setError(err.message);

@@ -56,7 +56,7 @@ import { useEffect, useState } from 'react';
 import PlayerCompareModal from './PlayerCompareModal.tsx';
 import { useFplData } from '../contexts/FplDataContext.jsx';
 
-const API_BASE = `${import.meta.env.VITE_BASE_URL}`;
+const API_BASE = import.meta.env.VITE_BASE_URL;
 
 const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => {
   // FPL context types
@@ -89,7 +89,7 @@ const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => 
       setError(null);
       try {
         // Fetch user team (current GW)
-        const teamRes = await fetch(`${import.meta.env.VITE_BASE_URL}/user-team/${userId}`);
+        const teamRes = await fetch(`${API_BASE}/user-team/${userId}`);
         if (!teamRes.ok) throw new Error('Could not fetch user team');
         const teamData = await teamRes.json();
 
