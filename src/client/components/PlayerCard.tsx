@@ -34,26 +34,27 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   const breakdown = pts ? getPointsBreakdown(pts.stats, player.element_type) : [];
   return (
     <div
-      className={`${colorClass} rounded px-3 py-2 font-bold shadow flex flex-col items-center relative group`}
+      className={`${colorClass} rounded px-2 py-1 md:px-3 md:py-2 font-bold shadow flex flex-col items-center relative group text-sm md:text-base`}
       tabIndex={0}
       onClick={() => setActiveTooltipId(activeTooltipId === player.id ? null : player.id)}
       onTouchEnd={e => { e.stopPropagation(); setActiveTooltipId(activeTooltipId === player.id ? null : player.id); }}
     >
       {isCaptain && (
-        <div className="absolute -top-2 -right-2 bg-yellow-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+        <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-yellow-400 text-[10px] md:text-xs font-bold text-white rounded-full w-4 h-4 md:w-6 md:h-6 flex items-center justify-center shadow-md">
           C
         </div>
       )}
       {isViceCaptain && (
-        <div className="absolute -top-2 -right-2 bg-gray-400 text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md">
+        <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-gray-400 text-[10px] md:text-xs font-bold text-white rounded-full w-4 h-4 md:w-6 md:h-6 flex items-center justify-center shadow-md">
           VC
         </div>
       )}
-      {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-10 h-12 rounded mb-1" />}
-      {player.web_name} <span className="text-xs text-gray-500">({positionLabel})</span>
+      {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-8 h-10 md:w-10 md:h-12 rounded mb-0.5 md:mb-1" />}
+      <span className="text-xs md:text-sm">{player.web_name}</span>
+      <span className="text-[10px] md:text-xs text-gray-500">({positionLabel})</span>
       {pts && (
-        <span className={`text-xs ${pointsColorClass} font-normal`}>
-          {pts.points * player.pick.multiplier} pts{pts.bonus ? `, Bonus: ${pts.bonus}` : ''}
+        <span className={`text-[10px] md:text-xs ${pointsColorClass} font-normal`}>
+          {pts.points * (player.pick.position > 11 ? 1 : player.pick.multiplier)} pts{pts.bonus ? `, +${pts.bonus}` : ''}
         </span>
       )}
       {/* Tooltip */}

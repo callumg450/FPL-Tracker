@@ -112,8 +112,7 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
       }
     }
     return null;
-  };
-  // Helper to get points and bonus for a player for the selected gameweek
+  };  // Helper to get points and bonus for a player for the selected gameweek
   const getPointsAndBonus = (elementId: number) => {
     if (liveData && liveData.length) {
       const live = liveData.find((el: any) => el.id === elementId);
@@ -129,7 +128,6 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
           stats: live.stats // Pass stats for breakdown
         };
       }
-      return null;
     }
     return null;
   };

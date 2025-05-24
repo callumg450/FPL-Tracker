@@ -80,10 +80,9 @@ const MyTeam: React.FC<MyTeamProps> = () => {
     if (!selectedEventId) {
       setLiveData([]); // Use empty array instead of null
       return;
-    }
-    fetch(`${import.meta.env.VITE_BASE_URL}/event/${selectedEventId}/live/`)
+    }    fetch(`${import.meta.env.VITE_BASE_URL}/event/${selectedEventId}/live/`)
       .then(res => res.json())
-      .then(data => {console.log(data.elements); setLiveData(data.elements || [])});
+      .then(data => setLiveData(data.elements || []));
   }, [selectedEventId]);
 
   // Fetch team for selected gameweek (only when submittedUserId changes)
