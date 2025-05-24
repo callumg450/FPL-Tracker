@@ -8,7 +8,7 @@
     "build": "npm run clean && vite build",
     "lint": "eslint src/client/.",
     "preview": "vite preview",
-    "start": "node server.js",
+    "start": "node static-server.js",
     "clean": "rimraf src/client/dist"
   },
   "dependencies": {
