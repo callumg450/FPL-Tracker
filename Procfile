@@ -1,1 +1,1 @@
-web: npm install --omit=dev && npm run build && node static-server.js
+web: npm ci --only=production && npm run build && node static-server.js
