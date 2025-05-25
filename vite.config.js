@@ -14,30 +14,23 @@ export default defineConfig(({ command, mode }) => {
     base: '/',
     build: {
       outDir: 'dist',
-      emptyOutDir: true,
-      sourcemap: true,
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          }
-        }
-      }
+      emptyOutDir: true
     },
     server: {
       port: parseInt(process.env.PORT) || 3000,
-      host: true,
-      strictPort: true
+      host: '0.0.0.0'
     },
     preview: {
       port: parseInt(process.env.PORT) || 3000,
-      host: true,
-      strictPort: true
+      host: '0.0.0.0'
     },
     resolve: {
       alias: {
         '@': resolve(__dirname, './src/client')
       }
+    },
+    define: {
+      'import.meta.env.VITE_BASE_URL': JSON.stringify(env.VITE_BASE_URL)
     }
   };
 });
