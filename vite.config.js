@@ -11,7 +11,6 @@ export default defineConfig(({ command, mode }) => {
     plugins: [react()],
     root: 'src/client',
     publicDir: 'public',
-    base: '/',
     build: {
       outDir: 'dist',
       emptyOutDir: true

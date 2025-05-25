@@ -10,16 +10,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-
 // Serve static files from the client build directory
 app.use(express.static(join(__dirname, 'src/client/dist')));
 
-// Handle client-side routing
-app.get('/*', (req, res, next) => {
-  // Don't interfere with static files
-  if (req.path.includes('.')) {
-    return next();
-  }
+// Handle client-side routing by returning the index.html for all routes
+app.get('*', (req, res) => {
   res.sendFile(join(__dirname, 'src/client/dist', 'index.html'));
 });
 
