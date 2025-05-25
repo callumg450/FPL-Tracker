@@ -39,9 +39,8 @@ const FixturesPage = () => {
     allFixtures: Fixture[];
     userId: string;
     setUserId: (id: string) => void;
-  };  useEffect(() => {
-    console.log(`${import.meta.env.VITE_BASE_URL}`)
-
+  };  
+  useEffect(() => {
     setLoading(true);
     if (events && events.length > 0 && allFixtures && allFixtures.length > 0) {
       let eventToUse;

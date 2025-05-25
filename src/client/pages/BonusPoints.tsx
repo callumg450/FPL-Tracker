@@ -65,7 +65,6 @@ const BonusPoints: React.FC<BonusPointsProps> = () => {
     fetch(`${import.meta.env.VITE_BASE_URL}/fixtures?event=${selectedGameweek}`)
       .then(res => res.json())
       .then(data => {
-        console.log('Fixtures data:', data);
         setFixtures(data || []);
       })
       .catch(error => {

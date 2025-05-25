@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import TeamFormation from '../components/TeamFormation';
 import TransferSuggestions from '../components/TransferSuggestions';
+import TransfersThisWeek from '../components/TransfersThisWeek';
 import { useFplData } from '../contexts/FplDataContext.jsx';
 
 const POSITION_MAP: Record<number, string> = {
@@ -232,6 +233,18 @@ const MyTeam: React.FC<MyTeamProps> = () => {  const { userId, setUserId, select
       </form>
       {team && players.length > 0 && (
         <div className="mt-8">
+          {/* Transfers this week */}
+          <TransfersThisWeek
+            entryId={submittedUserId ? Number(submittedUserId) : 0}
+            eventId={selectedGameweek ?? 0}
+            players={players}
+            eventTransfersCost={(() => {
+              if (!entryHistory || !selectedGameweek) return 0;
+              const currentGW = entryHistory.current.find((gw: any) => gw.event === selectedGameweek);
+              return currentGW?.event_transfers_cost || 0;
+            })()}
+            baseUrl={import.meta.env.VITE_BASE_URL}
+          />
           {/* Total score and hits for the week */}
           <div className="text-center text-lg font-bold text-indigo-900 mb-2">
             {(() => {

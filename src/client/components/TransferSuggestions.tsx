@@ -230,8 +230,6 @@ const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => 
               nextFixture: getFixtureShort(replacement),
             });
             suggestedReplacements.add(replacement.id);
-          } else {
-            console.log(`No replacement found for ${p.web_name}`);
           }
         }
         setSuggestions(suggestions);

@@ -11,7 +11,6 @@ router.get('/user-team/:userId/:eventId', async (req, res) => {
     const cacheKey = `USER_TEAM_GW_${userId}_${eventId}`;
     const cached = cache.get(cacheKey);
     if (cached){
-      console.log(`Cache hit for ${cacheKey}`); 
       return res.json(cached);
     }
     const response = await superagent.get(`https://fantasy.premierleague.com/api/entry/${userId}/event/${eventId}/picks/`);
@@ -31,7 +30,6 @@ router.get('/user-team/:userId', async (req, res) => {
     const cacheKey = `USER_TEAM_GW_${userId}_${eventId}`;
     const cached = cache.get(cacheKey);
     if (cached) {
-      console.log(`Cache hit for ${cacheKey}`); 
       return res.json(cached);
     }
     if (!eventId) throw new Error('Could not determine current gameweek');

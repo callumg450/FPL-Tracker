@@ -10,11 +10,9 @@ async function fetchFixtures(eventId) {
   if (cached) {
     return cached;
   }
-  console.log(`fetchFixtures not in cache for ${cacheKey}, fetching from FPL API`);
   const query = eventId !== undefined ? '?event=' + eventId : '';
   const response = await superagent.get(`https://fantasy.premierleague.com/api/fixtures/${query}`);
   cache.set(cacheKey, response.body);
-  console.log(`fetchFixtures cached data for ${cacheKey}`);
   return response.body;
 }
 

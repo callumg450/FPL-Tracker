@@ -1,5 +1,3 @@
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
 const express = require('express');
 const cors = require('cors');
 
@@ -31,6 +29,7 @@ const playersRoutes = require('./routes/players.cjs');
 const userRoutes = require('./routes/user.cjs');
 const leaguesRoutes = require('./routes/leagues.cjs');
 const eventRoutes = require('./routes/event.cjs');
+const entryTransfersRoutes = require('./routes/entry-transfers.cjs');
 
 // Mount routers
 app.use('/api', bootstrapRoutes.router || bootstrapRoutes);
@@ -39,6 +38,7 @@ app.use('/api', playersRoutes);
 app.use('/api', userRoutes);
 app.use('/api', leaguesRoutes);
 app.use('/api', eventRoutes);
+app.use('/api', entryTransfersRoutes);
 
 // Add request logging middleware to debug routing
 app.use((req, res, next) => {
