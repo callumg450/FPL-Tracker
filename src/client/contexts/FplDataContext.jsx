@@ -10,6 +10,10 @@ export const FplDataProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userId, setUserId] = useState(() => sessionStorage.getItem('userId') || '');
+  const [selectedGameweek, setSelectedGameweek] = useState(() => {
+    const saved = sessionStorage.getItem('selectedGameweek');
+    return saved ? Number(saved) : null;
+  });
 
   // Persist userId to sessionStorage whenever it changes
   useEffect(() => {
@@ -19,6 +23,15 @@ export const FplDataProvider = ({ children }) => {
       sessionStorage.removeItem('userId');
     }
   }, [userId]);
+
+  // Persist selectedGameweek to sessionStorage
+  useEffect(() => {
+    if (selectedGameweek) {
+      sessionStorage.setItem('selectedGameweek', selectedGameweek.toString());
+    } else {
+      sessionStorage.removeItem('selectedGameweek');
+    }
+  }, [selectedGameweek]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -64,6 +77,16 @@ export const FplDataProvider = ({ children }) => {
     team_short_name: bootstrapData.teams.find(t => t.id === player.team)?.short_name || ''
   })) || [];
 
+  // When bootstrap data is loaded, set current gameweek if not already set
+  useEffect(() => {
+    if (bootstrapData?.events && !selectedGameweek) {
+      const currentEvent = bootstrapData.events.find(e => e.is_current);
+      if (currentEvent) {
+        setSelectedGameweek(currentEvent.id);
+      }
+    }
+  }, [bootstrapData, selectedGameweek]);
+
   return (
     <FplDataContext.Provider value={{
       loading,
@@ -73,10 +96,12 @@ export const FplDataProvider = ({ children }) => {
       events: bootstrapData?.events || [],
       fixtures, //Upcoming fixtures,
       allFixtures,
-      currentGameweek: getCurrentGameweek(),
+      currentGameweek: getCurrentGameweek(),      
       rawBootstrapData: bootstrapData,
       userId,
-      setUserId
+      setUserId,
+      selectedGameweek,
+      setSelectedGameweek
     }}>
       {children}
     </FplDataContext.Provider>

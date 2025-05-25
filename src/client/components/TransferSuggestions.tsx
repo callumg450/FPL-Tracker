@@ -75,11 +75,14 @@ const TransferSuggestions: React.FC<TransferSuggestionsProps> = ({ userId }) => 
   const [comparePlayers, setComparePlayers] = useState<{ out: PlayerCompareModalPlayer | null; in: PlayerCompareModalPlayer | null }>({ out: null, in: null });
 
   useEffect(() => {
-    if (!userId) {
+    const hasRemainingGameweeks = events.find((e) => e.is_next);
+
+    if (!userId || !hasRemainingGameweeks) {
       setLoading(false);
       setSuggestions([]);
       return;
     }
+
     // Wait for FPL data to be loaded
     if (!rawBootstrapData || !rawBootstrapData.elements || !teams || teams.length === 0) {
       return;

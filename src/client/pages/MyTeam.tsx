@@ -49,10 +49,11 @@ interface Event {
   [key: string]: any;
 }
 
-const MyTeam: React.FC<MyTeamProps> = () => {
-  const { userId, setUserId } = useFplData() as {
+const MyTeam: React.FC<MyTeamProps> = () => {  const { userId, setUserId, selectedGameweek, setSelectedGameweek } = useFplData() as {
     userId: string;
     setUserId: (id: string) => void;
+    selectedGameweek: number | null;
+    setSelectedGameweek: (gw: number | null) => void;
   };
   const [inputUserId, setInputUserId] = useState(userId || '');
   const [submittedUserId, setSubmittedUserId] = useState(userId || '');
@@ -60,7 +61,6 @@ const MyTeam: React.FC<MyTeamProps> = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [liveData, setLiveData] = useState<LiveData[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [entryHistory, setEntryHistory] = useState<EntryHistory | null>(null);
   const [fixtures, setFixtures] = useState([]);
   const { teams, players, events } = useFplData() as {
@@ -68,30 +68,31 @@ const MyTeam: React.FC<MyTeamProps> = () => {
     players: Player[];
     events: Event[];
     };
-
-  // Fetch all players and events on mount
+  // Set current gameweek if none selected
   useEffect(() => {
+    if (!selectedGameweek && events.length > 0) {
       const currentEvent = events.find((e: any) => e.is_current);
-      setSelectedEventId(currentEvent ? currentEvent.id : null);
-  }, []);
+      if (currentEvent) {
+        setSelectedGameweek(currentEvent.id);
+      }
+    }
+  }, [events, selectedGameweek, setSelectedGameweek]);
 
   // Always fetch live data for the selected gameweek
-  useEffect(() => {
-    if (!selectedEventId) {
+  useEffect(() => {    if (!selectedGameweek) {
       setLiveData([]); // Use empty array instead of null
       return;
-    }    fetch(`${import.meta.env.VITE_BASE_URL}/event/${selectedEventId}/live/`)
+    }    fetch(`${import.meta.env.VITE_BASE_URL}/event/${selectedGameweek}/live/`)
       .then(res => res.json())
       .then(data => setLiveData(data.elements || []));
-  }, [selectedEventId]);
-
+  }, [selectedGameweek]);
   // Fetch team for selected gameweek (only when submittedUserId changes)
   useEffect(() => {
-    if (!submittedUserId || !selectedEventId) return;
+    if (!submittedUserId || !selectedGameweek) return;
     setLoading(true);
     setError(null);
     setTeam(null);
-    fetch(`${import.meta.env.VITE_BASE_URL}/user-team/${submittedUserId}/${selectedEventId}`)
+    fetch(`${import.meta.env.VITE_BASE_URL}/user-team/${submittedUserId}/${selectedGameweek}`)
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch team');
         return res.json();
@@ -99,7 +100,7 @@ const MyTeam: React.FC<MyTeamProps> = () => {
       .then(teamData => setTeam(teamData))
       .catch(err => setError(err.message || 'Fetch failed'))
       .finally(() => setLoading(false));
-  }, [submittedUserId, selectedEventId]);
+  }, [submittedUserId, selectedGameweek]);
 
   // Fetch entry history for user (only when submittedUserId changes)
   useEffect(() => {
@@ -108,14 +109,13 @@ const MyTeam: React.FC<MyTeamProps> = () => {
       .then(res => res.json())
       .then(data => setEntryHistory(data));
   }, [submittedUserId]);
-
   // Fetch fixtures for selected gameweek
   useEffect(() => {
-    if (!selectedEventId) return;
-    fetch(`${import.meta.env.VITE_BASE_URL}/fixtures?event=${selectedEventId}`)
+    if (!selectedGameweek) return;
+    fetch(`${import.meta.env.VITE_BASE_URL}/fixtures?event=${selectedGameweek}`)
       .then(res => res.json())
       .then(data => setFixtures(data || []));
-  }, [selectedEventId]);
+  }, [selectedGameweek]);
 
   useEffect(() => {
     setInputUserId(userId || '');
@@ -150,7 +150,7 @@ const MyTeam: React.FC<MyTeamProps> = () => {
 
   // Helper to get total score and points hit for the selected gameweek
   const getGameweekInfo = () => {
-    if (!team || !liveData || !entryHistory || !selectedEventId) return null;
+    if (!team || !liveData || !entryHistory || !selectedGameweek) return null;
     
     // Get total points
     let total = 0;
@@ -164,7 +164,7 @@ const MyTeam: React.FC<MyTeamProps> = () => {
     });
 
     // Get points hit
-    const currentGW = entryHistory.current.find((gw: any) => gw.event === selectedEventId);
+    const currentGW = entryHistory.current.find((gw: any) => gw.event === selectedGameweek);
     const pointsHit = currentGW?.event_transfers_cost || 0;
 
     return { total, pointsHit };
@@ -172,10 +172,10 @@ const MyTeam: React.FC<MyTeamProps> = () => {
 
   // Helper to get current and previous GW rank
   const getRankInfo = () => {
-    if (!entryHistory || !selectedEventId) return null;
+    if (!entryHistory || !selectedGameweek) return null;
     const currentArr = entryHistory.current || [];
-    const currentGW = currentArr.find((g: any) => g.event === selectedEventId);
-    const prevGW = currentArr.find((g: any) => g.event === selectedEventId - 1);
+    const currentGW = currentArr.find((g: any) => g.event === selectedGameweek);
+    const prevGW = currentArr.find((g: any) => g.event === selectedGameweek - 1);
     if (!currentGW) return null;
     return {
       current: currentGW.overall_rank,
@@ -209,8 +209,8 @@ const MyTeam: React.FC<MyTeamProps> = () => {
         <div className="flex justify-center">
           <select
             className="border rounded px-3 py-2 w-48"
-            value={selectedEventId ?? ''}
-            onChange={e => setSelectedEventId(Number(e.target.value))}
+            value={selectedGameweek ?? ''}
+            onChange={e => setSelectedGameweek(Number(e.target.value))}
             disabled={events.length === 0}
           >
             {events.map((event: any) => (
