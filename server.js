@@ -10,14 +10,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-// Serve static files from the client build directory
+// Point to the client/dist directory where Vite will build the frontend
 app.use(express.static(join(__dirname, 'src/client/dist')));
 
-// Handle client-side routing by returning the index.html for all routes
 app.get('*', (req, res) => {
   res.sendFile(join(__dirname, 'src/client/dist', 'index.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`Static file server running on port ${PORT}`);
+  console.log(`Frontend server is running on port ${PORT}`);
 });
