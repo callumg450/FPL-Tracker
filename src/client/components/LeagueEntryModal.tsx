@@ -2,6 +2,13 @@
 import React from 'react';
 import TeamFormation from './TeamFormation.js';
 
+const CHIP_LABELS: Record<string, string> = {
+  wildcard: 'Wildcard',
+  freehit: 'Free Hit',
+  bboost: 'Bench Boost',
+  '3xc': 'Triple Captain'
+};
+
 interface LeagueEntry {
   id: number;
   entry_name: string;
@@ -88,7 +95,7 @@ const LeagueEntryModal: React.FC<LeagueEntryModalProps> = ({
           {entryPicks.active_chip && (
             <div className="mb-2 text-center">
               <span className="inline-block bg-indigo-200 text-indigo-900 rounded px-3 py-1 font-semibold text-sm">
-                Chip played: {entryPicks.active_chip}
+                Chip played: {CHIP_LABELS[entryPicks.active_chip]}
               </span>
             </div>
           )}

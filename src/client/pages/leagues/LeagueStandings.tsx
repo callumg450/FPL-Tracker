@@ -296,8 +296,7 @@ const LeagueStandings: React.FC = () => {
     return () => clearInterval(refreshInterval);
   }, [currentEventId, events]);
 
-  return (
-    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-8 mt-8">
+  return (    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-2 sm:p-8 mt-8">
       <button
         className="mb-4 text-indigo-600 hover:underline font-semibold"
         onClick={() => navigate('/leagues')}
@@ -311,61 +310,7 @@ const LeagueStandings: React.FC = () => {
         <div className="text-red-500 text-center mb-4">{error}</div>
       ) : (
         <>
-          {standings.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full border text-sm">
-                <thead>
-                  <tr className="bg-indigo-100">
-                    <th className="px-2 py-1 border">Rank</th>
-                    <th className="px-2 py-1 border">Team</th>
-                    <th className="px-2 py-1 border">Manager</th>
-                    <th className="px-2 py-1 border">GW Points</th>
-                    <th className="px-2 py-1 border">Hits</th>
-                    <th className="px-2 py-1 border">Total Points</th>
-                    <th className="px-2 py-1 border">Rank Change</th>
-                    <th className="px-2 py-1 border">Chips Left</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {standings.map(entry => (
-                    <tr key={entry.id} className="text-center hover:bg-indigo-50 cursor-pointer" onClick={() => fetchEntryPicks(entry)}>
-                      <td className="border px-2 py-1 font-bold">{entry.rank}</td>
-                      <td className="border px-2 py-1">{entry.entry_name}</td>
-                      <td className="border px-2 py-1">{entry.player_name}</td>
-                      <td className="border px-2 py-1">{entry.event_total}</td>
-                      <td className={`border px-2 py-1 ${entry.event_transfers_cost > 0 ? 'text-red-600 font-bold' : ''}`}>
-                        {entry.event_transfers_cost > 0 ? `-${entry.event_transfers_cost}` : '0'}
-                      </td>
-                      <td className="border px-2 py-1">{entry.total}</td>
-                      <td className="border px-2 py-1">
-                        {entry.last_rank && entry.rank
-                          ? entry.last_rank - entry.rank > 0
-                            ? <span className="text-green-600 font-bold">+{entry.last_rank - entry.rank}</span>
-                            : entry.last_rank - entry.rank < 0
-                            ? <span className="text-red-600 font-bold">{entry.last_rank - entry.rank}</span>
-                            : <span className="font-bold">0</span>
-                          : '-'}
-                      </td>
-                      <td className="border px-2 py-1">
-                        {(() => {
-                          const chipsPlayed = Array.isArray(entry.chipsPlayed)
-                            ? entry.chipsPlayed
-                            : [];
-                          const chipsLeft = ALL_CHIPS.filter(chip => !chipsPlayed.includes(chip));
-                          return chipsLeft.length === 0
-                            ? <span className="text-gray-400 text-xs">None</span>
-                            : chipsLeft.map(chip => (
-                                <span key={chip} className="inline-block bg-green-100 text-green-800 rounded px-2 py-0.5 text-xs font-semibold mr-1 mb-0.5">
-                                  {CHIP_LABELS[chip] || chip}
-                                </span>
-                              ));
-                        })()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {standings.length > 0 && (            <div className="overflow-x-auto"><table className="min-w-full border text-sm"><thead><tr className="bg-indigo-100"><th className="px-1 sm:px-2 py-1 border text-xs sm:text-sm">Rank</th><th className="px-1 sm:px-2 py-1 border text-xs sm:text-sm">Team</th><th className="px-1 sm:px-2 py-1 border text-xs sm:text-sm">Manager</th><th className="px-1 sm:px-2 py-1 border text-xs sm:text-sm">GW Pts</th><th className="px-1 sm:px-2 py-1 border text-xs sm:text-sm">Hits</th><th className="px-1 sm:px-2 py-1 border text-xs sm:text-sm">Total</th><th className="px-1 sm:px-2 py-1 border text-xs sm:text-sm">±Rank</th><th className="px-1 sm:px-2 py-1 border text-xs sm:text-sm">Chips</th></tr></thead><tbody>{standings.map(entry => (<tr key={entry.id} className="text-center hover:bg-indigo-50 cursor-pointer" onClick={() => fetchEntryPicks(entry)}><td className="border px-1 sm:px-2 py-1 text-xs sm:text-sm font-bold">{entry.rank}</td><td className="border px-1 sm:px-2 py-1 text-xs sm:text-sm">{entry.entry_name}</td><td className="border px-1 sm:px-2 py-1 text-xs sm:text-sm">{entry.player_name}</td><td className="border px-1 sm:px-2 py-1 text-xs sm:text-sm">{entry.event_total}</td><td className={`border px-1 sm:px-2 py-1 text-xs sm:text-sm ${entry.event_transfers_cost > 0 ? 'text-red-600 font-bold' : ''}`}>{entry.event_transfers_cost > 0 ? `-${entry.event_transfers_cost}` : '0'}</td><td className="border px-2 py-1">{entry.total}</td><td className="border px-2 py-1">{entry.last_rank && entry.rank ? entry.last_rank - entry.rank > 0 ? <span className="text-green-600 font-bold">+{entry.last_rank - entry.rank}</span> : entry.last_rank - entry.rank < 0 ? <span className="text-red-600 font-bold">{entry.last_rank - entry.rank}</span> : <span className="font-bold">0</span> : '-'}</td><td className="border px-2 py-1">{(() => {const chipsPlayed = Array.isArray(entry.chipsPlayed) ? entry.chipsPlayed : []; const chipsLeft = ALL_CHIPS.filter(chip => !chipsPlayed.includes(chip)); return chipsLeft.length === 0 ? <span className="text-gray-400 text-xs">None</span> : chipsLeft.map(chip => (<span key={chip} className="inline-block bg-green-100 text-green-800 rounded px-2 py-0.5 text-xs font-semibold mr-1 mb-0.5">{CHIP_LABELS[chip] || chip}</span>));})()}</td></tr>))}</tbody></table></div>
           )}
           {standings.length === 0 && !loading && leagueName && (
             <div className="text-center text-gray-500 mt-4">No standings found for this league.</div>

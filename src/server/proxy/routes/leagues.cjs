@@ -26,17 +26,4 @@ router.get('/leagues-h2h/:leagueId/standings/', async (req, res) => {
   }
 });
 
-// Endpoint to get overall league standings for a specific gameweek
-router.get('/overall-league-standings/:eventId', async (req, res) => {
-  try {
-    const { eventId } = req.params;
-    const overallLeagueId = 314;
-    const response = await superagent.get(`https://fantasy.premierleague.com/api/leagues-classic/${overallLeagueId}/standings/?event=${eventId}&page_standings=1`);
-    res.json(response.body);
-  } catch (err) {
-    console.error('Proxy error (overall-league-standings):', err.message);
-    res.status(500).json({ error: 'Failed to fetch overall league standings', details: err.message });
-  }
-});
-
 module.exports = router;

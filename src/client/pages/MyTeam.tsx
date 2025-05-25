@@ -148,21 +148,26 @@ const MyTeam: React.FC<MyTeamProps> = () => {
     });
   }
 
-  // Helper to get total score for the selected gameweek
-  const getTotalScore = () => {
-    if (!team || !liveData) return null;
-    // Only count starting XI (position 1-11)
+  // Helper to get total score and points hit for the selected gameweek
+  const getGameweekInfo = () => {
+    if (!team || !liveData || !entryHistory || !selectedEventId) return null;
+    
+    // Get total points
     let total = 0;
     team.picks.forEach((pick: any) => {
       if (pick.position <= 11) {
         const live = liveData.find((el: any) => el.id === pick.element);
         if (live) {
-          // Account for captaincy/vice-captaincy
           total += live.stats.total_points * pick.multiplier;
         }
       }
     });
-    return total;
+
+    // Get points hit
+    const currentGW = entryHistory.current.find((gw: any) => gw.event === selectedEventId);
+    const pointsHit = currentGW?.event_transfers_cost || 0;
+
+    return { total, pointsHit };
   };
 
   // Helper to get current and previous GW rank
@@ -227,9 +232,20 @@ const MyTeam: React.FC<MyTeamProps> = () => {
       </form>
       {team && players.length > 0 && (
         <div className="mt-8">
-          {/* Total score for the week */}
+          {/* Total score and hits for the week */}
           <div className="text-center text-lg font-bold text-indigo-900 mb-2">
-            Total Score: {getTotalScore() !== null ? getTotalScore() : 'N/A'}
+            {(() => {
+              const info = getGameweekInfo();
+              if (!info) return 'Total Score: N/A';
+              return (
+                <>
+                  Total Score: {info.total}
+                  {info.pointsHit > 0 && (
+                    <span className="text-red-600 ml-2">(-{info.pointsHit} pts) = {info.total - info.pointsHit}</span>
+                  )}
+                </>
+              );
+            })()}
           </div>
           {/* Rank info */}
           {(() => {
