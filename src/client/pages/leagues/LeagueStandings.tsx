@@ -65,25 +65,34 @@ const LeagueStandings: React.FC = () => {
   const [entryPicks, setEntryPicks] = useState<any | null>(null);
   const [loadingPicks, setLoadingPicks] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
-  const [currentEventId, setCurrentEventId] = useState<number | null>(null);
   const [liveData, setLiveData] = useState<any[]>([]);
-  const { events, players, teams, fixtures } = useFplData() as {
-    teams: Team[];
-    fixtures: any[];
-    events: Event[];
-    players: Player[];
-  };
+  const { events, players, teams, fixtures, selectedGameweek, setSelectedGameweek } = useFplData() as any;
 
-  // Fetch current gameweek when events are available
+  // Sync selectedGameweek from context to always use sessionStorage value
   useEffect(() => {
-    if (!events || !events.length) return;
-    const currentEvent = events.find((e: any) => e.is_current);
-    if (currentEvent) {
-      setCurrentEventId(currentEvent.id);
-    } else if (events.length > 0) {
-      setCurrentEventId(events[0].id);
+    if (!selectedGameweek && events && events.length > 0) {
+      let gw: number | undefined = undefined;
+      const currentEvent = events.find((e: any) => e.is_current);
+      if (currentEvent) {
+        gw = currentEvent.id;
+      } else {
+        // Fallback: use the highest event id whose deadline_time is in the past, else max id
+        const today = new Date();
+        const validEvents = events.filter(e => {
+          if (e.deadline_time) {
+            return new Date(e.deadline_time) <= today;
+          }
+          return true;
+        });
+        if (validEvents.length > 0) {
+          gw = Math.max(...validEvents.map(e => e.id));
+        } else {
+          gw = Math.max(...events.map(e => e.id));
+        }
+      }
+      setSelectedGameweek(gw);
     }
-  }, [events]);
+  }, [events, selectedGameweek, setSelectedGameweek]);
 
   // Fetch league info and standings
   useEffect(() => {
@@ -92,26 +101,24 @@ const LeagueStandings: React.FC = () => {
     setError(null);
     setStandings([]);
     setLeagueName('');
-    // Try both classic and h2h endpoints
     const fetchStandings = async () => {
       try {
         let url = `${import.meta.env.VITE_BASE_URL}/leagues-classic/${leagueId}/standings/`;
         let res = await fetch(url);
         if (!res.ok) {
-          // Try h2h
           url = `${import.meta.env.VITE_BASE_URL}/leagues-h2h/${leagueId}/standings/`;
           res = await fetch(url);
         }
         if (!res.ok) throw new Error('Failed to fetch league standings');
         const data = await res.json();
-        let eventId = currentEventId;
+        let eventId = selectedGameweek;
         if (!eventId && data.league && data.league.current_event) {
           eventId = data.league.current_event;
-          setCurrentEventId(eventId);
+          setSelectedGameweek(eventId);
         } else if (!eventId && events && events.length) {
           const currentEvent = events.find(e => e.is_current);
           eventId = currentEvent ? currentEvent.id : events[0].id;
-          setCurrentEventId(eventId);
+          setSelectedGameweek(eventId);
         }
         if (!eventId) throw new Error('Current gameweek could not be determined');
         const liveRes = await fetch(`${import.meta.env.VITE_BASE_URL}/event/${eventId}/live/`);
@@ -175,7 +182,7 @@ const LeagueStandings: React.FC = () => {
     };
     fetchStandings();
     // eslint-disable-next-line
-  }, [leagueId, currentEventId, events]);
+  }, [leagueId, selectedGameweek, events]);
 
   // Calculate bonus points for a player from live fixtures
   const getLiveBonus = (elementId: number, unfinishedFixtures: any[]): number | null => {
@@ -234,16 +241,16 @@ const LeagueStandings: React.FC = () => {
     setEntryPicks(null);
     setSelectedEntry(entry);
     try {
-      let eventId = currentEventId;
+      let eventId = selectedGameweek;
       if (!eventId && events && events.length) {
         const currentEvent = events.find(e => e.is_current);
         eventId = currentEvent ? currentEvent.id : events[0].id;
-        setCurrentEventId(eventId);
+        setSelectedGameweek(eventId);
       }
       if (!eventId) {
         if (entry.event) {
           eventId = entry.event;
-          setCurrentEventId(eventId);
+          setSelectedGameweek(eventId);
         } else {
           throw new Error('Current gameweek not found');
         }
@@ -276,17 +283,11 @@ const LeagueStandings: React.FC = () => {
 
   // Fetch live data for the current gameweek (for player points in modal)
   useEffect(() => {
-    if (!currentEventId) {
-      if (events && events.length) {
-        const currentEvent = events.find(e => e.is_current);
-        if (currentEvent) {
-          setCurrentEventId(currentEvent.id);
-        }
-      }
+    if (!selectedGameweek) {
       return;
     }
     const fetchLiveData = () => {
-      fetch(`${import.meta.env.VITE_BASE_URL}/event/${currentEventId}/live/`)
+      fetch(`${import.meta.env.VITE_BASE_URL}/event/${selectedGameweek}/live/`)
         .then(res => res.json())
         .then(data => setLiveData(data.elements || []))
         .catch(() => {});
@@ -294,7 +295,7 @@ const LeagueStandings: React.FC = () => {
     fetchLiveData();
     const refreshInterval = setInterval(fetchLiveData, 60000);
     return () => clearInterval(refreshInterval);
-  }, [currentEventId, events]);
+  }, [selectedGameweek, events]);
 
   return (    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-2 sm:p-8 mt-8">
       <button
