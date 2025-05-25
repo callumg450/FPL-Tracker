@@ -5,14 +5,15 @@
   "main": "proxy/index.cjs",
   "scripts": {
     "start": "node proxy/index.cjs",
-    "dev": "nodemon proxy/index.cjs",
-    "build": "echo \"No build step required\""
+    "dev": "nodemon proxy/index.cjs"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "node-fetch": "^2.6.1",
-    "superagent": "^10.2.1",
+    "superagent": "^10.2.1"
+  },
+  "devDependencies": {
     "nodemon": "^2.0.22"
   },
   "engines": {
