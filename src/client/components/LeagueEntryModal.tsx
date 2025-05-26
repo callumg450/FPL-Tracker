@@ -1,7 +1,7 @@
 //Component for each individual entry in the league ranking table
 import React, { useEffect, useState } from 'react';
-import TeamFormation from './TeamFormation.js';
-import TransfersThisWeek from './TransfersThisWeek';
+import TeamFormation from './team/TeamFormation.js';
+import TransfersThisWeek from './team/TransfersThisWeek.js';
 
 const CHIP_LABELS: Record<string, string> = {
   wildcard: 'Wildcard',

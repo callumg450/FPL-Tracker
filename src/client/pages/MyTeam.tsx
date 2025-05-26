@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import TeamFormation from '../components/TeamFormation';
+import TeamFormation from '../components/team/TeamFormation.js';
 import TransferSuggestions from '../components/TransferSuggestions';
-import TransfersThisWeek from '../components/TransfersThisWeek';
+import TransfersThisWeek from '../components/team/TransfersThisWeek.js';
 import { useFplData } from '../contexts/FplDataContext.jsx';
 
 const POSITION_MAP: Record<number, string> = {
