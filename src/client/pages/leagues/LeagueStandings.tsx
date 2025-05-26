@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import TeamFormation from '../../components/team/TeamFormation.js';
 import { useFplData } from '../../contexts/FplDataContext.jsx';
 import LeagueEntryModal from '../../components/LeagueEntryModal.js';
+import { applyAutoSubs } from '../../utils/fplAutoSubs';
 
 interface LeagueEntry {
   id: number;
@@ -218,9 +219,11 @@ const LeagueStandings: React.FC = () => {
     return null;
   };
 
-  // Calculate live points for a team's picks
+  // Calculate live points for a team's picks (with auto-subs applied)
   const calculateLivePoints = (picks: any[], liveData: any[]) => {
-    return picks.reduce((total, pick) => {
+    // Apply auto-subs before calculating points
+    const picksWithSubs = applyAutoSubs(picks, liveData, players, fixtures);
+    return picksWithSubs.reduce((total, pick) => {
       const playerData = liveData.find(p => p.id === pick.element);
       if (playerData) {
         let points = playerData.stats.total_points;

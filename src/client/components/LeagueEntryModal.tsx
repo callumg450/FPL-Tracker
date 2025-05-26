@@ -1,7 +1,8 @@
 //Component for each individual entry in the league ranking table
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import TeamFormation from './team/TeamFormation.js';
 import TransfersThisWeek from './team/TransfersThisWeek.js';
+import { applyAutoSubs } from '../utils/fplAutoSubs';
 
 const CHIP_LABELS: Record<string, string> = {
   wildcard: 'Wildcard',
@@ -54,38 +55,13 @@ const LeagueEntryModal: React.FC<LeagueEntryModalProps> = ({
   onClose,
   onRefresh
 }) => {
-  const [transfers, setTransfers] = useState<any[]>([]);
-  const [loadingTransfers, setLoadingTransfers] = useState(false);
-
-  useEffect(() => {
-    const fetchTransfers = async () => {
-      if (!selectedEntry || !selectedEntry.entry) return;
-      setLoadingTransfers(true);
-      try {
-        const res = await fetch(`${import.meta.env.VITE_BASE_URL}/entry-transfers/${selectedEntry.entry}`);
-        if (!res.ok) throw new Error('Failed to fetch transfers');
-        const data = await res.json();
-        // Filter for current event only
-        const eventId = entryPicks?.entry_history?.event || entryPicks?.event;
-        const filtered = Array.isArray(data)
-          ? data.filter((t: any) => t.event === eventId)
-          : [];
-        setTransfers(filtered);
-        console.log(filtered)
-      } catch {
-        setTransfers([]);
-      } finally {
-        setLoadingTransfers(false);
-      }
-    };
-    fetchTransfers();
-  }, [selectedEntry, entryPicks]);
-
-  // Helper to get player name by id
-  const getPlayerName = (id: number) => {
-    const player = players.find(p => p.id === id);
-    return player ? player.web_name : `ID:${id}`;
-  };
+  // Memoize picksWithSubs to avoid unnecessary recomputation
+  const picksWithSubs = useMemo(() => {
+    if (entryPicks && entryPicks.picks && players && liveData && fixtures) {
+      return applyAutoSubs(entryPicks.picks, liveData, players, fixtures);
+    }
+    return entryPicks?.picks;
+  }, [entryPicks, players, liveData, fixtures]);
 
   return (
     <div 
@@ -149,6 +125,7 @@ const LeagueEntryModal: React.FC<LeagueEntryModalProps> = ({
               showPoints={true} 
               teams={teams}
               fixtures={fixtures}
+              picksWithSubs={picksWithSubs} // Use computed picksWithSubs for live sub highlighting
             />
           </>
         ) : entryPicks && entryPicks.error ? (

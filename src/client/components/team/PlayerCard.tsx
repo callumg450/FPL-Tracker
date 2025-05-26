@@ -13,6 +13,8 @@ interface PlayerCardProps {
   getPointsBreakdown: (stats: any, elementType?: number) => string[];
   activeTooltipId: number | null;
   setActiveTooltipId: (id: number | null) => void;
+  // New: bench status for sub on/off badge
+  benchStatus?: { cameOn?: boolean; cameOff?: boolean };
 }
 
 const PlayerCard: React.FC<PlayerCardProps> = ({
@@ -27,6 +29,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   getPointsBreakdown,
   activeTooltipId,
   setActiveTooltipId,
+  benchStatus
 }) => {
   const pts = showPoints ? getPointsAndBonus(player.id) : null;
   const faceUrl = getPlayerFaceUrl(player);
@@ -39,6 +42,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
       onClick={() => setActiveTooltipId(activeTooltipId === player.id ? null : player.id)}
       onTouchEnd={e => { e.stopPropagation(); setActiveTooltipId(activeTooltipId === player.id ? null : player.id); }}
     >
+      {/* Captain/VC badges */}
       {isCaptain && (
         <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-yellow-400 text-[10px] md:text-xs font-bold text-white rounded-full w-4 h-4 md:w-6 md:h-6 flex items-center justify-center shadow-md">
           C
@@ -47,6 +51,17 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
       {isViceCaptain && (
         <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-gray-400 text-[10px] md:text-xs font-bold text-white rounded-full w-4 h-4 md:w-6 md:h-6 flex items-center justify-center shadow-md">
           VC
+        </div>
+      )}
+      {/* Sub on/off badge */}
+      {benchStatus?.cameOn && (
+        <div className="absolute -top-1 -left-1 md:-top-2 md:-left-2 bg-green-500 text-white text-[10px] md:text-xs font-bold rounded-full w-5 h-5 md:w-7 md:h-7 flex items-center justify-center shadow-md z-10">
+          ON
+        </div>
+      )}
+      {benchStatus?.cameOff && (
+        <div className="absolute -top-1 -left-1 md:-top-2 md:-left-2 bg-red-500 text-white text-[10px] md:text-xs font-bold rounded-full w-5 h-5 md:w-7 md:h-7 flex items-center justify-center shadow-md z-10">
+          OFF
         </div>
       )}
       {faceUrl && <img src={faceUrl} alt={player.web_name} className="w-8 h-10 md:w-10 md:h-12 rounded mb-0.5 md:mb-1" />}

@@ -34,9 +34,10 @@ interface TeamFormationProps {
   showPoints?: boolean;
   teams?: Team[];
   fixtures?: any[];
+  picksWithSubs?: Pick[]; // already added in previous edit
 }
 
-const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData = [], showPoints = false, teams = [], fixtures = [] }) => {
+const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData = [], showPoints = false, teams = [], fixtures = [], picksWithSubs }) => {
   // Helper to map pick.element to player object
   const getPlayer = (elementId: number) => players.find(p => p.id === elementId);
   // Helper to determine if player is captain or vice-captain
@@ -228,6 +229,26 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // If picksWithSubs is provided, compare to picks to determine who came on/off
+  // Map: elementId -> { cameOn: boolean, cameOff: boolean }
+  const benchStatus: Record<number, { cameOn?: boolean; cameOff?: boolean }> = {};
+  if (picksWithSubs && picks) {
+    const originalStarting = picks.filter(p => p.position <= 11).map(p => p.element);
+    const finalStarting = picksWithSubs.map(p => p.element);
+    // Players who were in original XI but not in final XI: came off
+    originalStarting.forEach(elementId => {
+      if (!finalStarting.includes(elementId)) {
+        benchStatus[elementId] = { ...(benchStatus[elementId] || {}), cameOff: true };
+      }
+    });
+    // Players who are in final XI but not in original XI: came on
+    finalStarting.forEach(elementId => {
+      if (!originalStarting.includes(elementId)) {
+        benchStatus[elementId] = { ...(benchStatus[elementId] || {}), cameOn: true };
+      }
+    });
+  }
+
   return (
     <div className="flex flex-col items-center gap-4" ref={containerRef}>
       {/* Goalkeeper */}
@@ -246,6 +267,8 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
             getPointsBreakdown={getPointsBreakdown}
             activeTooltipId={activeTooltipId}
             setActiveTooltipId={setActiveTooltipId}
+            // New: pass bench status for badge
+            benchStatus={benchStatus[player.id]}
           />
         ))}
       </div>
@@ -265,6 +288,7 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
             getPointsBreakdown={getPointsBreakdown}
             activeTooltipId={activeTooltipId}
             setActiveTooltipId={setActiveTooltipId}
+            benchStatus={benchStatus[player.id]}
           />
         ))}
       </div>
@@ -284,6 +308,7 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
             getPointsBreakdown={getPointsBreakdown}
             activeTooltipId={activeTooltipId}
             setActiveTooltipId={setActiveTooltipId}
+            benchStatus={benchStatus[player.id]}
           />
         ))}
       </div>
@@ -303,6 +328,7 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
             getPointsBreakdown={getPointsBreakdown}
             activeTooltipId={activeTooltipId}
             setActiveTooltipId={setActiveTooltipId}
+            benchStatus={benchStatus[player.id]}
           />
         ))}
       </div>
@@ -325,6 +351,7 @@ const TeamFormation: React.FC<TeamFormationProps> = ({ picks, players, liveData 
                 getPointsBreakdown={getPointsBreakdown}
                 activeTooltipId={activeTooltipId}
                 setActiveTooltipId={setActiveTooltipId}
+                benchStatus={benchStatus[player.id]}
               />
             ))}
           </div>
