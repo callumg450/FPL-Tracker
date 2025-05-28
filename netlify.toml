@@ -1,7 +1,7 @@
 [build]
   command = "npm run build"
   publish = "dist"
-  base = "./"
+  base = "/"
   ignore = "git diff --quiet $COMMIT_REF $CACHED_COMMIT_REF src/server/"
   
 [[redirects]]
